@@ -25,6 +25,10 @@
                 <input type="text" id="tableLinkInput" placeholder="https://docs.google.com/spreadsheets/d/...">
                 <button id="loadDataBtn"><i class="fas fa-rocket"></i> Анализировать</button>
             </div>
+            <div class="form-group">
+                <label for="sheetSelect">Выберите лист для анализа:</label>
+                <select id="sheetSelect"></select>
+            </div>
             <div class="feedback-message" id="inputFeedback"></div>
         </section>
 
@@ -35,13 +39,14 @@
         
         <div id="dashboardContent" class="hidden">
             <section class="active-sheet-info">
-                <strong>Анализируется первый лист таблицы</strong> (<span id="activeSheetRows">0</span> строк)
+                <strong>Анализируется лист: </strong> <span id="activeSheetName"></span> (<span id="activeSheetRows">0</span> строк)
             </section>
             
             <nav class="data-navigation">
                 <ul>
                     <li data-tab="analytics" class="active"><i class="fas fa-chart-pie"></i> Аналитика</li>
                     <li data-tab="data-preview"><i class="fas fa-table"></i> Просмотр данных</li>
+                    <li data-tab="recommendations"><i class="fas fa-lightbulb"></i> Рекомендации</li>
                 </ul>
             </nav>
 
@@ -50,7 +55,7 @@
                     <button class="analysis-tab active" data-analysis="descriptive"><i class="fas fa-eye"></i> Описательная</button>
                     <button class="analysis-tab" data-analysis="diagnostic"><i class="fas fa-search"></i> Диагностическая</button>
                     <button class="analysis-tab" data-analysis="predictive"><i class="fas fa-chart-line"></i> Предиктивная</button>
-                    <button class="analysis-tab" data-analysis="prescriptive"><i class="fas fa-lightbulb"></i> Прескриптивная</button>
+                    <button class="analysis-tab" data-analysis="prescriptive"><i class="fas fa-prescription"></i> Прескриптивная</button>
                 </div>
 
                 <div id="descriptive" class="analysis-content active">
@@ -96,6 +101,13 @@
                 <h2>Просмотр данных таблицы</h2>
                 <div id="dataPreviewTable"></div>
             </div>
+
+            <section id="recommendations" class="tab-content">
+                <h2>Рекомендации</h2>
+                <ul id="recommendationList">
+                    <!-- Рекомендации будут генерироваться здесь -->
+                </ul>
+            </section>
         </div>
     </div>
     <script src="script.js"></script>
