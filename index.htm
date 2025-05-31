@@ -3,29 +3,140 @@
 <head>
     <title>Google Sheets Dashboard</title>
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" integrity="sha512-9usAa10IRO0HhonpyAIVpjrylPvoDwiPUiKdWk5t3PyolY1cOd4DSE0Ga+ri4AuTroPR5aQvXU9xC6qOPnzFeg==" crossorigin="anonymous" referrerpolicy="no-referrer" /> <!-- Font Awesome для иконок -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Google Sheets Dashboard</h1>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1>Google Sheets Dashboard</h1>
+            <div class="header-actions">
+                <button id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Обновить данные</button>
+                <button id="settingsBtn"><i class="fas fa-cog"></i> Настройки</button>
+            </div>
+        </header>
 
-        <div class="settings">
-            <h2>Настройки</h2>
-            <label for="spreadsheetId">ID таблицы:</label>
-            <input type="text" id="spreadsheetId" placeholder="Введите ID таблицы">
-            <label for="apiKey">API ключ:</label>
-            <input type="text" id="apiKey" placeholder="Введите API ключ">
-            <button id="loadDataBtn">Загрузить данные</button>
+        <div class="settings-modal" id="settingsModal">
+            <div class="settings-content">
+                <span class="close-button" id="closeSettingsModal">×</span>
+                <h2>Настройки</h2>
+                <label for="spreadsheetId">ID таблицы:</label>
+                <input type="text" id="spreadsheetId" placeholder="Введите ID таблицы">
+                <label for="apiKey">API ключ:</label>
+                <input type="text" id="apiKey" placeholder="Введите API ключ">
+                <button id="saveSettingsBtn">Сохранить</button>
+            </div>
         </div>
 
-        <div id="tabs">
-            <!-- Вкладки будут генерироваться здесь -->
-        </div>
+        <section class="table-input-section">
+            <div class="quick-table-change">
+                <i class="fas fa-link"></i>
+                <input type="text" id="tableLink" placeholder="Вставьте ссылку на Google Sheets или ID таблицы">
+                <button id="saveTableLinkBtn"><i class="fas fa-save"></i>Сохранить</button>
+            </div>
+        </section>
 
-        <div id="content">
-            <!-- Контент вкладок будет генерироваться здесь -->
-        </div>
+        <section class="sheets-list-section">
+            <h2>Листы таблицы</h2>
+            <p>Переключайтесь между листами для анализа данных</p>
+            <div id="sheetsList" class="sheets-list">
+                <!-- Список листов будет генерироваться здесь -->
+            </div>
+        </section>
 
+        <section class="data-preview-section">
+            <h2>Интеллектуальный предварительный просмотр</h2>
+            <div id="dataPreviewTable">
+                <!-- Таблица предварительного просмотра данных -->
+            </div>
+
+            <div class="auto-data-structure">
+                <strong>Автоопределенная структура данных:</strong>
+                <div id="dataStructure">
+                    <!-- Отображение структуры данных -->
+                </div>
+            </div>
+        </section>
+
+        <nav class="data-navigation">
+            <ul>
+                <li data-tab="data"><i class="fas fa-table"></i> Данные</li>
+                <li data-tab="visualization"><i class="fas fa-chart-bar"></i> Визуализация</li>
+                <li data-tab="dashboard"><i class="fas fa-tachometer-alt"></i> Дашборд</li>
+                <li data-tab="calendar"><i class="fas fa-calendar-alt"></i> Календарь</li>
+                <li data-tab="planner"><i class="fas fa-list-alt"></i> Планировщик</li>
+                <li data-tab="analytics" class="active"><i class="fas fa-chart-line"></i> Аналитика</li>
+                <li data-tab="auto-analysis"><i class="fas fa-magic"></i> Авто-анализ</li>
+                <li data-tab="extended-analysis"><i class="fas fa-expand"></i> Расширенный анализ</li>
+            </ul>
+        </nav>
+
+        <section class="active-sheet-info">
+            <strong>Активный лист:</strong> <span id="activeSheetName">Лист 1</span> (<span id="activeSheetRows">8</span> строк)
+        </section>
+
+        <section id="analytics" class="analysis-section active">
+            <div class="analysis-tabs">
+                <button class="analysis-tab active" data-analysis="descriptive"><i class="fas fa-eye"></i> Описательная</button>
+                <button class="analysis-tab" data-analysis="diagnostic"><i class="fas fa-search"></i> Диагностическая</button>
+                <button class="analysis-tab" data-analysis="predictive"><i class="fas fa-chart-future"></i> Предиктивная</button>
+                <button class="analysis-tab" data-analysis="prescriptive"><i class="fas fa-prescription"></i> Прескриптивная</button>
+            </div>
+
+            <div id="descriptive" class="analysis-content active">
+                <h2>Описательная аналитика: "Что произошло?"</h2>
+                <div class="descriptive-metrics">
+                    <div class="metric-card">
+                        <span class="metric-value" id="totalRecords">8</span>
+                        <span class="metric-label">Всего записей</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="totalColumns">6</span>
+                        <span class="metric-label">Столбцов</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="fillRate">58%</span>
+                        <span class="metric-label">Заполненность</span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-value" id="dataQuality">98%</span>
+                        <span class="metric-label">Качество данных</span>
+                    </div>
+                </div>
+
+                <h3>Тренды</h3>
+                <div class="trend-section">
+                    <p>Последний месяц: <span id="lastMonthTrend">8</span> <span class="trend-indicator up">+10%</span></p>
+                    <p>Последняя неделя: <span id="lastWeekTrend">2</span> <span class="trend-indicator down">-3%</span></p>
+                </div>
+
+                <h3>Топ значения</h3>
+                <div class="top-values-section">
+                    <p>Имя клиента:
+                        <span>Борис: <span id="borisCount">3</span></span>
+                        <span>Денис: <span id="denisCount">2</span></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Секции для диагностической, предиктивной и прескриптивной аналитики -->
+            <div id="diagnostic" class="analysis-content">
+                <h2>Диагностическая аналитика: "Почему это произошло?"</h2>
+                <p>Здесь будет контент для диагностической аналитики.</p>
+            </div>
+
+            <div id="predictive" class="analysis-content">
+                <h2>Предиктивная аналитика: "Что может произойти?"</h2>
+                <p>Здесь будет контент для предиктивной аналитики.</p>
+            </div>
+
+            <div id="prescriptive" class="analysis-content">
+                <h2>Прескриптивная аналитика: "Что нам следует сделать?"</h2>
+                <p>Здесь будет контент для прескриптивной аналитики.</p>
+            </div>
+        </section>
+
+        <!-- Другие секции (Data, Visualization, Dashboard, Calendar, Planner) - добавить по необходимости -->
     </div>
 
     <script src="config.js"></script>
