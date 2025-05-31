@@ -4,6 +4,7 @@ body {
     color: #343a40;
     margin: 0;
     padding: 0;
+    min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
 }
 
 .dashboard-container {
@@ -13,8 +14,12 @@ body {
     background-color: #fff;
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 40px); /* Adjust container height to fill viewport */
 }
 
+/* Header Styles */
 .dashboard-header {
     display: flex;
     justify-content: space-between;
@@ -26,8 +31,14 @@ body {
 
 .dashboard-header h1 {
     font-size: 2rem;
-    color: #007bff; /* Accent color */
+    color: #007bff;
     margin: 0;
+    flex: 1; /* Allow the title to take up available space */
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
 }
 
 .header-actions button {
@@ -45,6 +56,7 @@ body {
     background-color: #0056b3;
 }
 
+/* Settings Modal */
 .settings-modal {
     display: none;
     position: fixed;
@@ -54,10 +66,11 @@ body {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
+    overflow: auto; /* Enable scroll if modal content is too long */
 }
 
 .settings-content {
-    position: absolute;
+    position: relative;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -65,7 +78,8 @@ body {
     padding: 20px;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-    width: 500px; /* Примерная ширина */
+    max-width: 500px;
+    width: 90%; /* Adjust width for smaller screens */
 }
 
 .close-button {
@@ -77,6 +91,31 @@ body {
     color: #aaa;
 }
 
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+}
+
+.form-group .validation-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* Table Input Section */
 .table-input-section {
     margin-bottom: 2rem;
     padding: 1rem;
@@ -88,26 +127,36 @@ body {
 .quick-table-change {
     display: flex;
     align-items: center;
+    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
 }
 
 .quick-table-change input {
     flex-grow: 1;
-    padding: 0.5rem;
+    padding: 0.75rem;
     border: 1px solid #ced4da;
     border-radius: 0.25rem;
     margin-right: 0.5rem;
+    margin-bottom: 0.5rem; /* Add some space below the input on smaller screens */
 }
 
 .quick-table-change button {
     background-color: #28a745;
     color: white;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.25rem;
     cursor: pointer;
     transition: background-color 0.2s;
+    margin-bottom: 0.5rem; /* Add some space below the button on smaller screens */
 }
 
+.feedback-message {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+    display: block;
+}
+
+/* Sheets List Section */
 .sheets-list-section h2 {
     font-size: 1.5rem;
     margin-bottom: 0.5rem;
@@ -116,18 +165,18 @@ body {
 .sheets-list {
     display: flex;
     overflow-x: auto;
-    padding-bottom: 0.5rem; /* Чтобы избежать обрезки тени */
+    padding-bottom: 0.5rem;
 }
 
 .sheets-list button {
     background-color: #e9ecef;
     color: #495057;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.25rem;
     cursor: pointer;
     margin-right: 0.5rem;
-    white-space: nowrap; /* Предотвращает перенос текста на новую строку */
+    white-space: nowrap;
     transition: background-color 0.2s;
 }
 
@@ -136,8 +185,24 @@ body {
     color: white;
 }
 
+/* Loading Indicator */
+.loading-indicator {
+    display: none;
+    text-align: center;
+    padding: 1rem;
+    color: #007bff;
+}
+
+.loading-indicator.active {
+    display: block;
+}
+
+/* Data Preview Section */
 .data-preview-section {
     margin-bottom: 2rem;
+    flex-grow: 1; /* Allow the data preview section to take up available vertical space */
+    display: flex;
+    flex-direction: column; /* Ensure content within this section is also a flex container */
 }
 
 .data-preview-section h2 {
@@ -147,13 +212,14 @@ body {
 
 #dataPreviewTable {
     overflow-x: auto;
+    flex-grow: 1; /* Allow the table to take up available vertical space */
 }
 
 table {
     border-collapse: collapse;
     width: 100%;
     margin-bottom: 1rem;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08); /* Less pronounced shadow */
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08);
 }
 
 th,
@@ -168,6 +234,7 @@ th {
     font-weight: 500;
 }
 
+/* Data Navigation */
 .data-navigation {
     background-color: #f8f9fa;
     border: 1px solid #e9ecef;
@@ -180,6 +247,7 @@ th {
     list-style: none;
     padding: 0;
     margin: 0;
+    overflow-x: auto; /* Allow horizontal scrolling on small screens */
 }
 
 .data-navigation li {
@@ -187,6 +255,7 @@ th {
     cursor: pointer;
     transition: background-color 0.2s;
     border-right: 1px solid #e9ecef;
+    white-space: nowrap; /* Prevent wrapping of text on small screens */
 }
 
 .data-navigation li:last-child {
@@ -206,6 +275,7 @@ th {
     background-color: #007bff;
 }
 
+/* Active Sheet Info */
 .active-sheet-info {
     font-size: 0.875rem;
     color: #6c757d;
@@ -223,6 +293,7 @@ th {
 
 .analysis-tabs {
     display: flex;
+    overflow-x: auto; /* Allow horizontal scrolling on small screens */
     margin-bottom: 1.5rem;
 }
 
@@ -230,10 +301,11 @@ th {
     background-color: #e9ecef;
     color: #495057;
     border: none;
-    padding: 0.5rem 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 0.25rem;
     cursor: pointer;
     margin-right: 0.5rem;
+    white-space: nowrap;
     transition: background-color 0.2s;
 }
 
@@ -278,6 +350,7 @@ th {
     display: block;
 }
 
+/* Trend Section */
 .trend-section p {
     margin-bottom: 0.5rem;
 }
@@ -299,6 +372,7 @@ th {
     color: #dc3545;
 }
 
+/* Top Values Section */
 .top-values-section p {
     margin-bottom: 0.5rem;
 }
@@ -320,11 +394,36 @@ th {
         align-items: flex-start;
     }
 
+    .dashboard-header h1 {
+        margin-bottom: 1rem; /* Add some space below the title */
+    }
+
     .header-actions {
         margin-top: 1rem;
+        flex-direction: column; /* Stack buttons vertically */
+        align-items: stretch; /* Make buttons take up full width */
+    }
+
+    .header-actions button {
+        margin-left: 0; /* Remove left margin */
+        margin-bottom: 0.5rem; /* Add space between buttons */
     }
 
     .descriptive-metrics {
         grid-template-columns: 1fr;
+    }
+
+    .quick-table-change {
+        flex-direction: column; /* Stack input and button vertically */
+        align-items: stretch; /* Make input and button take up full width */
+    }
+
+    .quick-table-change input {
+        margin-right: 0; /* Remove right margin */
+        margin-bottom: 0.5rem; /* Add space between input and button */
+    }
+
+    .data-navigation ul {
+        flex-wrap: nowrap; /* Prevent wrapping of navigation items */
     }
 }
