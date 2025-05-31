@@ -15,6 +15,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveSettingsBtn = document.getElementById('saveSettingsBtn');
     const tableLinkInput = document.getElementById('tableLink');
     const saveTableLinkBtn = document.getElementById('saveTableLinkBtn');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const spreadsheetIdValidation = document.getElementById('spreadsheetIdValidation');
+    const apiKeyValidation = document.getElementById('apiKeyValidation');
+    const settingsFeedback = document.getElementById('settingsFeedback');
+    const tableLinkFeedback = document.getElementById('tableLinkFeedback');
 
     // Analysis section elements
     const analysisTabs = document.querySelectorAll('.analysis-tab');
@@ -32,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentSpreadsheetId = localStorage.getItem('spreadsheetId') || '';
     let currentApiKey = localStorage.getItem('apiKey') || '';
     let sheetsData = [];
-    let currentSheetIndex = 0;
+    let currentSheetIndex = parseInt(localStorage.getItem('currentSheetIndex')) || 0; // Load last selected sheet index
 
     // Initialization
     spreadsheetIdInput.value = currentSpreadsheetId;
@@ -41,33 +46,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Functions
 
     //Load data and update ui
-    const loadAndDisplayData = async (spreadsheetId, apiKey) => {
+    const loadAndDisplayData = async (spreadsheetId, apiKey, sheetIndex = currentSheetIndex) => {
         try {
+            showLoadingIndicator(true);
             sheetsData = await loadSheetsData(spreadsheetId, apiKey);
             createSheetsList(sheetsData);
-            showDataPreview(0); // Default to the first sheet
+            showDataPreview(sheetIndex); // Use provided sheetIndex or default
         } catch (error) {
             console.error('Error loading data:', error);
             alert('Error loading data. Check your Spreadsheet ID, API Key, and CORS settings.');
+        } finally {
+            showLoadingIndicator(false);
         }
     }
 
     // Load initial data if available
     if (currentSpreadsheetId && currentApiKey) {
-        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
+        loadAndDisplayData(currentSpreadsheetId, currentApiKey, currentSheetIndex); // Load with last selected sheet
     }
 
     // Fetch Sheets Data
     async function loadSheetsData(spreadsheetId, apiKey) {
-      const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
-      const response = await fetch(spreadsheetUrl);
+        const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+        const response = await fetch(spreadsheetUrl);
 
-      if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-      }
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
 
-      const data = await response.json();
-      return data.sheets;
+        const data = await response.json();
+        return data.sheets;
     }
 
     // Create Sheets List
@@ -88,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show Data Preview for a selected sheet
     async function showDataPreview(sheetIndex) {
         currentSheetIndex = sheetIndex;
+        localStorage.setItem('currentSheetIndex', sheetIndex); // Save current sheet index
 
         // Update active state of sheet buttons
         document.querySelectorAll('.sheet-button').forEach((btn, index) => {
@@ -144,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await response.json();
         return data.values;
     }
-
 
     // Create Table
     function createTable(data) {
@@ -288,10 +296,6 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataBtn.addEventListener('click', () => {
         const spreadsheetId = spreadsheetIdInput.value;
         const apiKey = apiKeyInput.value;
-
-        //Store values in local storage
-        localStorage.setItem('spreadsheetId', spreadsheetId);
-        localStorage.setItem('apiKey', apiKey);
         loadAndDisplayData(spreadsheetId, apiKey);
     });
 
@@ -315,7 +319,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const spreadsheetId = spreadsheetIdInput.value;
         const apiKey = apiKeyInput.value;
 
-         //Store values in local storage
+        // Validate inputs
+        if (!validateInputs(spreadsheetId, apiKey)) return;
+
+        //Store values in local storage
         localStorage.setItem('spreadsheetId', spreadsheetId);
         localStorage.setItem('apiKey', apiKey);
 
@@ -336,24 +343,6 @@ document.addEventListener('DOMContentLoaded', () => {
         spreadsheetIdInput.value = spreadsheetId;
         currentSpreadsheetId = spreadsheetId;
 
-        //Store values in local storage
-        localStorage.setItem('spreadsheetId', spreadsheetId);
-        localStorage.setItem('apiKey', apiKey);
-
         loadAndDisplayData(currentSpreadsheetId, currentApiKey);
-    });
 
-    // Analysis Tabs
-    analysisTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Deactivate all tabs and contents
-            analysisTabs.forEach(t => t.classList.remove('active'));
-            analysisContents.forEach(c => c.classList.remove('active'));
-
-            // Activate selected tab and content
-            tab.classList.add('active');
-            const analysisType = tab.dataset.analysis;
-            document.getElementById(analysisType).classList.add('active');
-        });
-    });
-});
+        showFeedback(tableLinkFeedback, "Ссылка на таблицу сохра
