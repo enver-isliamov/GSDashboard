@@ -178,7 +178,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dataType === 'number') {
                 createBarChart(canvas, header, columnData.map(Number));
             } else if (dataType === 'string') {
-                createPieChart(canvas, header, columnData);
+                // Проверяем наличие данных перед созданием круговой диаграммы
+                const counts = data.reduce((acc, value) => {
+                    acc[value] = (acc[value] || 0) + 1;
+                    return acc;
+                }, {});
+                
+                const chartLabels = Object.keys(counts);
+                const chartData = Object.values(counts);
+
+                if (chartLabels.length > 1) { // Убедимся, что есть хотя бы 2 разных значения для диаграммы
+                    createPieChart(canvas, header, columnData);
+                }  else {
+                    // Если значений недостаточно, выводим сообщение вместо графика
+                    canvas.outerHTML = `<p>Недостаточно данных для построения круговой диаграммы по столбцу "${header}".</p>`;
+                }
             }
         });
     }
@@ -257,7 +271,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return acc;
         }, {});
         
-                const chartData = Object.values(counts);
+        const chartLabels = Object.keys(counts);
+        const chartData = Object.values(counts);
 
         new Chart(canvas, {
             type: 'pie',
