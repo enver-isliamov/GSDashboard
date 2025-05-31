@@ -1,79 +1,84 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // === DOM ЭЛЕМЕНТЫ ===
-  const tableLinkInput = document.getElementById('tableLinkInput');
-  const loadDataBtn = document.getElementById('loadDataBtn');
-  const refreshDataBtn = document.getElementById('refreshDataBtn');
-  const inputFeedback = document.getElementById('inputFeedback');
-  const loadingIndicator = document.getElementById('loadingIndicator');
-  const dashboardContent = document.getElementById('dashboardContent');
+    // === DOM ЭЛЕМЕНТЫ ===
+    const tableLinkInput = document.getElementById('tableLinkInput');
+    const loadDataBtn = document.getElementById('loadDataBtn');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const inputFeedback = document.getElementById('inputFeedback');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const dashboardContent = document.getElementById('dashboardContent');
 
-  // Смена select на div
-  const sheetTabs = document.getElementById('sheetTabs');
+    // Смена select на div
+    const sheetTabs = document.getElementById('sheetTabs');
 
-  // Навигация
-  const mainNavItems = document.querySelectorAll('.data-navigation li');
-  const mainTabs = document.querySelectorAll('.tab-content');
-  const analysisNavItems = document.querySelectorAll('.analysis-tab');
-  const analysisTabs = document.querySelectorAll('.analysis-content');
+    // Навигация
+    const mainNavItems = document.querySelectorAll('.data-navigation li');
+    const mainTabs = document.querySelectorAll('.tab-content');
+    const analysisNavItems = document.querySelectorAll('.analysis-tab');
+    const analysisTabs = document.querySelectorAll('.analysis-content');
 
-  // Элементы для данных
-  const activeSheetNameSpan = document.getElementById('activeSheetName');
-  const activeSheetRowsSpan = document.getElementById('activeSheetRows');
-  const totalRecordsSpan = document.getElementById('totalRecords');
-  const totalColumnsSpan = document.getElementById('totalColumns');
-  const fillRateSpan = document.getElementById('fillRate');
-  const dataQualitySpan = document.getElementById('dataQuality');
-  const chartsContainer = document.getElementById('chartsContainer');
-  const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
+    // Элементы для данных
+    const activeSheetNameSpan = document.getElementById('activeSheetName');
+    const activeSheetRowsSpan = document.getElementById('activeSheetRows');
+    const totalRecordsSpan = document.getElementById('totalRecords');
+    const totalColumnsSpan = document.getElementById('totalColumns');
+    const fillRateSpan = document.getElementById('fillRate');
+    const dataQualitySpan = document.getElementById('dataQuality');
+    const chartsContainer = document.getElementById('chartsContainer');
+    const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
 
-  // Рекомендации
-  const recommendationList = document.getElementById('recommendationList');
+    // Рекомендации
+    const recommendationList = document.getElementById('recommendationList');
 
-  // === СОСТОЯНИЕ ПРИЛОЖЕНИЯ ===
-  let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
-  let spreadsheetId = "";
+    // === СОСТОЯНИЕ ПРИЛОЖЕНИЯ ===
+    let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
+    let spreadsheetId = "";
   
-  // === ИНИЦИАЛИЗАЦИЯ ===
-  if (lastLoadedUrl) {
-    tableLinkInput.value = lastLoadedUrl;
-    loadAndDisplayData(lastLoadedUrl);
-  }
-
-  // === ОБРАБОТЧИКИ СОБЫТИЙ ===
-  loadDataBtn.addEventListener('click', () => {
-    const url = tableLinkInput.value;
-    if (url) {
-      loadAndDisplayData(url);
-    } else {
-      showFeedback('Пожалуйста, вставьте ссылку на таблицу.', 'error');
-    }
-  });
-
-  refreshDataBtn.addEventListener('click', () => {
+    // === ИНИЦИАЛИЗАЦИЯ ===
     if (lastLoadedUrl) {
-      loadAndDisplayData(lastLoadedUrl, true);
-    } else {
-      alert('Сначала загрузите данные, чтобы их можно было обновить.');
+        tableLinkInput.value = lastLoadedUrl;
+        loadAndDisplayData(lastLoadedUrl);
     }
-  });
 
-  mainNavItems.forEach(item => {
-    item.addEventListener('click', () => {
-      mainNavItems.forEach(i => i.classList.remove('active'));
-      mainTabs.forEach(t => t.classList.remove('active'));
-      item.classList.add('active');
-      document.getElementById(item.dataset.tab).classList.add('active');
+    // === ОБРАБОТЧИКИ СОБЫТИЙ ===
+    loadDataBtn.addEventListener('click', () => {
+        const url = tableLinkInput.value;
+        if (url) {
+            loadAndDisplayData(url);
+        } else {
+            showFeedback('Пожалуйста, вставьте ссылку на таблицу.', 'error');
+        }
     });
-  });
 
-  analysisNavItems.forEach(item => {
-    item.addEventListener('click', () => {
-      analysisNavItems.forEach(i => i.classList.remove('active'));
-      analysisTabs.forEach(c => c.classList.remove('active'));
-      item.classList.add('active');
-      document.getElementById(item.dataset.analysis).classList.add('active');
+    refreshDataBtn.addEventListener('click', () => {
+        if (lastLoadedUrl) {
+            loadAndDisplayData(lastLoadedUrl, true);
+        } else {
+            alert('Сначала загрузите данные, чтобы их можно было обновить.');
+        }
     });
-  });
+
+    mainNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            mainNavItems.forEach(i => i.classList.remove('active'));
+            mainTabs.forEach(t => t.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById(item.dataset.tab).classList.add('active');
+        });
+    });
+
+    analysisNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            analysisNavItems.forEach(i => i.classList.remove('active'));
+            analysisTabs.forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById(item.dataset.analysis).classList.add('active');
+        });
+    });
+
+  function parseCSV(text) {
+    const lines = text.replace(/\r/g, '').split('\n');
+    return lines.map(line => line.split(','));
+  }
 
   // === ОСНОВНАЯ ЛОГИКА ===
   async function loadAndDisplayData(url, forceRefresh = false) {
@@ -86,12 +91,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const response = await fetch(sheetListUrl);
       const data = await response.text();
       const jsonData = JSON.parse(data.substring(47).slice(0, -2));
-
+        if (!jsonData || !jsonData.table || !jsonData.table.cols) {
+                    throw new Error("Не удалось получить данные о листах из таблицы.");
+        }
       const sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
 
       populateSheetTabs(sheetNames);
       showFeedback("Листы успешно получены");
         localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
+
     } catch (error) {
       console.error('Ошибка при загрузке данных:', error);
       showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
@@ -99,71 +107,50 @@ document.addEventListener('DOMContentLoaded', () => {
       showLoading(false);
     }
   }
-   function parseCSV(text) {
-    const lines = text.replace(/\r/g, '').split('\n');
-    return lines.map(line => line.split(','));
-  }
-  
-    function createSheetTab(sheetName, index, spreadsheetId) {
+
+  function createSheetTab(sheetName, index, spreadsheetId) {
       const button = document.createElement('button');
       button.classList.add('sheet-tab');
       button.textContent = sheetName;
-      button.addEventListener('click', async () => {
-          // Убираем active
-           document.querySelectorAll('.sheet-tab').forEach(tab => {
-            tab.classList.remove('active');
-          });
+         button.addEventListener('click', async () => {
+          document.querySelectorAll('.sheet-tab').forEach(tab => tab.classList.remove('active'));
+          button.classList.add('active');
 
-           // Подсветим выбранную вкладку
-           button.classList.add('active');
-
-          // Загружаем CSV данные для нужной таблицы и отображаем
-          let csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
-          // Используем метод fetch для загрузки CSV-данных.
-          fetch(csvUrl)
-             .then(response => {
-                if (!response.ok) {
-                  throw new Error('Network response was not ok');
-                }
-                return response.text();
-              })
-             .then(csvText => {
-                let data = parseCSV(csvText);
-                  // Создаем объект с данными и именем листа
-                 const sheetData = { "sheetName": sheetName, "data": data };
-                  // Вызываем функцию для отображения и анализа данных
-                 displayDataForSheet(sheetData);
-              })
-            .catch(error => {
-              console.error('There has been a problem with your fetch operation:', error);
-            });
-        });
-
+         try {
+              let csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+              const response = await fetch(csvUrl);
+              if (!response.ok) {
+                      throw new Error(`Ошибка при загрузке CSV: ${response.status} ${response.statusText}`);
+              }
+              const csvText = await response.text();
+              const data = parseCSV(csvText);
+           displayData({"sheetName": sheetName, "data": data});
+         } catch (e) {
+              console.error("Ошибка во время обработки данных: ",e.message,e);
+           }
+         });
       return button;
-    }
-
-    function populateSheetTabs(sheetNames) {
-      sheetTabs.innerHTML = ''; // Clear old tabs
-
-      sheetNames.forEach((sheetName, index) => {
-        const button = createSheetTab(sheetName, index, spreadsheetId);
-        sheetTabs.appendChild(button);
-      });
-
-      // Делаем первую вкладку активной
-        try {
-                let tab = document.getElementsByClassName("sheet-tab")[0];
-                tab.click()
-            } catch (e) {
-                console.error("An error occurred:", e.message, e);
-            }
-    }
-   
-  function parseCSV(text) {
-    const lines = text.replace(/\r/g, '').split('\n');
-    return lines.map(line => line.split(','));
   }
-   // === ФУНКЦИИ АНАЛИЗА И ОТОБРАЖЕНИЯ ===
+     
+   function populateSheetTabs(sheetNames) {
+      sheetTabs.innerHTML = '';
+      if (Array.isArray(sheetNames) && sheetNames.length) {
+            sheetNames.forEach((sheetName, index) => {
+                const button = createSheetTab(sheetName, index, spreadsheetId);
+                sheetTabs.appendChild(button);
+            });
+             // Auto click on tab
+               let tab = document.getElementsByClassName("sheet-tab")[0];
+               if (tab) {
+                  tab.click()
+               } else {
+                     console.warn("tab undefined - can not do click on tab");
+                }  
+      } else {
+         showFeedback("Листы отсутствуют. Проверьте данные.");
+      }
+    }
+
   function displayAnalytics(data) {
     const headers = data[0];
     const rows = data.slice(1);
@@ -204,13 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
+// Окно
   function displayTable(data) {
     const table = document.createElement('table');
     const thead = document.createElement('thead');
     const tbody = document.createElement('tbody');
-    const headerRow = document.createElement('tr');
 
+    const headerRow = document.createElement('tr');
     data[0].forEach(headerText => {
       const th = document.createElement('th');
       th.textContent = headerText;
@@ -284,85 +271,95 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+  // New function
+  function displayData(sheetData) {
+        const { sheetName, data } = sheetData;
+         
+          activeSheetNameSpan.textContent = sheetName;
+           if(data.length>1){
+           displayAnalytics(data); // Show analytics for the sheet
+           displayTable(data); // Show table for the sheet
+            generateRecommendations(data); // Generate recommendations
+           } else {
+               showFeedback("Что-то пошло не так в процессе парсинга данных", "error");
+           }
+  }
+// New function
    function createHorizontalBarChart(canvas, label, data) {
-    const counts = {};
-    data.forEach(value => {
-        counts[value] = (counts[value] || 0) + 1;
-    });
+       const counts = {};
+       data.forEach(value => {
+           counts[value] = (counts[value] || 0) + 1;
+       });
 
-    const labels = Object.keys(counts);
-    const values = Object.values(counts);
+       const labels = Object.keys(counts);
+       const values = Object.values(counts);
 
-    new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: label,
-                data: values,
-                backgroundColor: generatePastelColors(labels.length),
-                borderWidth: 1
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `Горизонтальная столбчатая диаграмма для "${label}"`
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true
-                }
-            }
+       new Chart(canvas, {
+           type: 'bar',
+           data: {
+               labels: labels,
+               datasets: [{
+                   label: label,
+                   data: values,
+                   backgroundColor: generatePastelColors(labels.length),
+                   borderWidth: 1
+               }]
+           },
+           options: {
+               indexAxis: 'y',
+               responsive: true,
+               maintainAspectRatio: false,
+               plugins: {
+                   title: {
+                       display: true,
+                       text: `Горизонтальная столбчатая диаграмма для "${label}"`
+                   }
+               },
+               scales: {
+                   x: {
+                       beginAtZero: true
+                   }
+               }
+           }
+       });
+   }
+   function generatePastelColors(count) {
+     const colors = [];
+     for (let i = 0; i < count; i++) {
+           const hue = Math.floor(Math.random() * 360);
+           colors.push(`hsl(${hue}, 70%, 80%)`);
+     }
+     return colors;
+   }
+    // === ФУНКЦИИ АНАЛИЗА И РЕКОМЕНДАЦИЙ ===
+    function generateRecommendations(data) {
+        recommendationList.innerHTML = '';
+        if (!data || data.length <= 1) {
+          recommendationList.innerHTML = '<li>Нет данных для анализа.</li>';
+          return;
         }
-    });
-  }
-  function generatePastelColors(count) {
-    const colors = [];
-    for (let i = 0; i < count; i++) {
-      const hue = Math.floor(Math.random() * 360);
-      colors.push(`hsl(${hue}, 70%, 80%)`);
+
+       const headers = data[0];
+       const rows = data.slice(1);
+        if (rows.length < 5) {
+           recommendationList.innerHTML += '<li>Рассмотрите возможность добавить больше данных для получения более точных результатов анализа.</li>';
+         }
+
+       if (headers.length > 10) {
+           recommendationList.innerHTML += '<li>Оптимизируйте количество столбцов для упрощения анализа.</li>';
+        }
+     recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные результаты анализа.</li>"
+
+   }
+
+    // Инициализация при загрузке страницы.
+    try {
+        tableLinkInput.value = localStorage.getItem("url_sheet_g");
+        if (tableLinkInput.value != "") {
+            loadAndDisplayData(localStorage.getItem("url_sheet_g"));
+        }
+
+    } catch (ex) {
+      showFeedback("Найдена старая сессия");
     }
-    return colors;
-  }
-
-  // === ФУНКЦИИ АНАЛИЗА И РЕКОМЕНДАЦИЙ ===
-  function generateRecommendations(data) {
-    recommendationList.innerHTML = ''; // Очищаем существующие рекомендации
-
-    // Выдаем рекомендации
-    if (!data || data.length <= 1) {
-      recommendationList.innerHTML = '<li>Нет данных для анализа.</li>';
-      return;
-    }
-
-    const headers = data[0];
-    const rows = data.slice(1);
-
-    if (rows.length < 5) {
-      recommendationList.innerHTML += '<li>Рассмотрите возможность добавить больше данных для получения более точных результатов анализа.</li>';
-    }
-
-    if (headers.length > 10) {
-      recommendationList.innerHTML += '<li>Оптимизируйте количество столбцов для упрощения анализа.</li>';
-    }
-     recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные рекомендации.</li>"
-
-  }
-
-  // Инициализация при загрузке страницы.
-  try {
-    tableLinkInput.value = localStorage.getItem("url_sheet_g");
-    if (tableLinkInput.value != "") {
-      loadAndDisplayData(localStorage.getItem("url_sheet_g"));
-    }
-
-  } catch (ex) {
-
-  }
 });
