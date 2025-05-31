@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Sheets Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Chart.js -->
+</head>
+<body>
+    <div class="container">
+        <h1>Google Sheets Dashboard</h1>
+
+        <div class="settings">
+            <h2>Настройки</h2>
+            <label for="spreadsheetId">ID таблицы:</label>
+            <input type="text" id="spreadsheetId" placeholder="Введите ID таблицы">
+            <label for="apiKey">API ключ:</label>
+            <input type="text" id="apiKey" placeholder="Введите API ключ">
+            <button id="loadDataBtn">Загрузить данные</button>
+        </div>
+
+        <div id="tabs">
+            <!-- Вкладки будут генерироваться здесь -->
+        </div>
+
+        <div id="content">
+            <!-- Контент вкладок будет генерироваться здесь -->
+        </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
