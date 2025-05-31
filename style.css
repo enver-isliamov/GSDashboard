@@ -4,7 +4,7 @@ body {
     color: #343a40;
     margin: 0;
     padding: 0;
-    min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
+    min-height: 100vh;
 }
 
 .dashboard-container {
@@ -16,7 +16,7 @@ body {
     border-radius: 0.5rem;
     display: flex;
     flex-direction: column;
-    min-height: calc(100vh - 40px); /* Adjust container height to fill viewport */
+    min-height: calc(100vh - 40px);
 }
 
 /* Header Styles */
@@ -33,7 +33,7 @@ body {
     font-size: 2rem;
     color: #007bff;
     margin: 0;
-    flex: 1; /* Allow the title to take up available space */
+    flex: 1;
 }
 
 .header-actions {
@@ -66,7 +66,7 @@ body {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 1000;
-    overflow: auto; /* Enable scroll if modal content is too long */
+    overflow: auto;
 }
 
 .settings-content {
@@ -79,7 +79,7 @@ body {
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
     max-width: 500px;
-    width: 90%; /* Adjust width for smaller screens */
+    width: 90%;
 }
 
 .close-button {
@@ -127,7 +127,7 @@ body {
 .quick-table-change {
     display: flex;
     align-items: center;
-    flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+    flex-wrap: wrap;
 }
 
 .quick-table-change input {
@@ -136,7 +136,7 @@ body {
     border: 1px solid #ced4da;
     border-radius: 0.25rem;
     margin-right: 0.5rem;
-    margin-bottom: 0.5rem; /* Add some space below the input on smaller screens */
+    margin-bottom: 0.5rem;
 }
 
 .quick-table-change button {
@@ -147,7 +147,7 @@ body {
     border-radius: 0.25rem;
     cursor: pointer;
     transition: background-color 0.2s;
-    margin-bottom: 0.5rem; /* Add some space below the button on smaller screens */
+    margin-bottom: 0.5rem;
 }
 
 .feedback-message {
@@ -200,9 +200,9 @@ body {
 /* Data Preview Section */
 .data-preview-section {
     margin-bottom: 2rem;
-    flex-grow: 1; /* Allow the data preview section to take up available vertical space */
+    flex-grow: 1;
     display: flex;
-    flex-direction: column; /* Ensure content within this section is also a flex container */
+    flex-direction: column;
 }
 
 .data-preview-section h2 {
@@ -212,7 +212,7 @@ body {
 
 #dataPreviewTable {
     overflow-x: auto;
-    flex-grow: 1; /* Allow the table to take up available vertical space */
+    flex-grow: 1;
 }
 
 table {
@@ -247,7 +247,7 @@ th {
     list-style: none;
     padding: 0;
     margin: 0;
-    overflow-x: auto; /* Allow horizontal scrolling on small screens */
+    overflow-x: auto;
 }
 
 .data-navigation li {
@@ -255,7 +255,7 @@ th {
     cursor: pointer;
     transition: background-color 0.2s;
     border-right: 1px solid #e9ecef;
-    white-space: nowrap; /* Prevent wrapping of text on small screens */
+    white-space: nowrap;
 }
 
 .data-navigation li:last-child {
@@ -293,7 +293,7 @@ th {
 
 .analysis-tabs {
     display: flex;
-    overflow-x: auto; /* Allow horizontal scrolling on small screens */
+    overflow-x: auto;
     margin-bottom: 1.5rem;
 }
 
@@ -395,18 +395,18 @@ th {
     }
 
     .dashboard-header h1 {
-        margin-bottom: 1rem; /* Add some space below the title */
+        margin-bottom: 1rem;
     }
 
     .header-actions {
         margin-top: 1rem;
-        flex-direction: column; /* Stack buttons vertically */
-        align-items: stretch; /* Make buttons take up full width */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .header-actions button {
-        margin-left: 0; /* Remove left margin */
-        margin-bottom: 0.5rem; /* Add space between buttons */
+        margin-left: 0;
+        margin-bottom: 0.5rem;
     }
 
     .descriptive-metrics {
@@ -414,16 +414,16 @@ th {
     }
 
     .quick-table-change {
-        flex-direction: column; /* Stack input and button vertically */
-        align-items: stretch; /* Make input and button take up full width */
+        flex-direction: column;
+        align-items: stretch;
     }
 
     .quick-table-change input {
-        margin-right: 0; /* Remove right margin */
-        margin-bottom: 0.5rem; /* Add space between input and button */
+        margin-right: 0;
+        margin-bottom: 0.5rem;
     }
 
     .data-navigation ul {
-        flex-wrap: nowrap; /* Prevent wrapping of navigation items */
+        flex-wrap: nowrap;
     }
 }
