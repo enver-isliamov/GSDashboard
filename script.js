@@ -390,3 +390,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
   }
 });
+async function loadAndDisplayData(url, forceRefresh = false) {
+    showLoading(true);
+    showFeedback('');
+    try {
+        spreadsheetId = extractSpreadsheetId(url);
+        const sheetListUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
+        const response = await fetch(sheetListUrl);
+        const data = await response.text();
+        const jsonData = JSON.parse(data.substring(47).slice(0, -2));
+
+        sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
+
+        populateSheetTabs(sheetNames);
+        showFeedback("Листы успешно получены");
+         localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
+
+        // Добавим проверку тут:
+        if (sheetTabs) {
+            populateSheetTabs(sheetNames);
+        } else {
+            console.error("Элемент sheetTabs не найден!");
+        }
+    }  catch (error) {
+        console.error('Ошибка при загрузке данных:', error);
+        showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+function populateSheetTabs(sheetNames) {
+    if (!sheetTabs) {
+        console.error("Элемент sheetTabs не найден, не могу создать вкладки!");
+        return;
+    }
+
+    sheetTabs.innerHTML = ''; // Clear old tabs
+
+    sheetNames.forEach((sheetName, index) => {
+        const button = createSheetTab(sheetName, index, spreadsheetId);
+        sheetTabs.appendChild(button);
+    });
+
+    // Делаем первую вкладку активной
+    if (sheetNames.length > 0) {
+        // Проверяем, что вкладки были добавлены в DOM, прежде чем пытаться их активировать
+         if (sheetTabs.children.length > 0) {
+            let tab = sheetTabs.children[0];
+            tab.click();
+         } else {
+             console.warn("Вкладки листов созданы, но не добавлены в DOM.");
+         }
+
+    }
+}
