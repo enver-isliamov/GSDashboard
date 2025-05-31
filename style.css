@@ -241,6 +241,39 @@ th {
     font-weight: 600;
 }
 
+/* Styles for Sheet Selection */
+.table-input-section .form-group {
+    margin-top: 1rem;
+}
+
+.table-input-section .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.table-input-section .form-group select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    appearance: none; /* Remove default arrow in some browsers */
+    background-image: url('data:image/svg+xml,<svg fill="#6c757d" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M3.81 5.81c-.81-.81-2.13-.81-2.94 0-.81.81-.81 2.13 0 2.94l5 5c.39.39 1.02.39 1.41 0l5-5c.81-.81.81-2.13 0-2.94-.81-.81-2.13-.81-2.94 0L8 10.19l-4.19-4.19z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right .75rem center;
+    background-size: 16px 12px;
+}
+
+/* Styles for Recommendations */
+#recommendations ul {
+    list-style: disc;
+    padding-left: 2rem;
+}
+
+#recommendations li {
+    margin-bottom: 0.5rem;
+}
+
 @media (max-width: 768px) {
     body { padding: 10px; }
     .dashboard-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
