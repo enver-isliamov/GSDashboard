@@ -1,0 +1,103 @@
+body {
+    font-family: sans-serif;
+    background-color: #f9f9f9;
+    margin: 0;
+    padding: 0;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+.settings {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background-color: #f0f0f0;
+}
+
+.settings label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.settings input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.settings button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    cursor: pointer;
+}
+
+.settings button:hover {
+    background-color: #3e8e41;
+}
+
+#tabs {
+    display: flex;
+    overflow-x: auto; /* Горизонтальная прокрутка для большого количества вкладок */
+}
+
+#tabs button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #eee;
+    cursor: pointer;
+    margin-right: 5px; /* Добавим отступ между кнопками */
+}
+
+#tabs button.active {
+    background-color: #ddd;
+}
+
+#content > div {
+    display: none; /* Скрываем все вкладки по умолчанию */
+    padding: 20px;
+    border: 1px solid #ddd;
+    margin-top: 10px;
+}
+
+#content > div.active {
+    display: block; /* Показываем активную вкладку */
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+canvas {
+    max-width: 100%; /* Делаем графики адаптивными */
+    height: auto;
+    margin-bottom: 20px;
+}
