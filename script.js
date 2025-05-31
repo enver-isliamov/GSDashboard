@@ -7,8 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadingIndicator = document.getElementById('loadingIndicator');
   const dashboardContent = document.getElementById('dashboardContent');
 
-  // Селектор листов
-  const sheetSelect = document.getElementById('sheetSelect');
+  // Смена select на div
+  const sheetTabs = document.getElementById('sheetTabs');
 
   // Навигация
   const mainNavItems = document.querySelectorAll('.data-navigation li');
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const totalRecordsSpan = document.getElementById('totalRecords');
   const totalColumnsSpan = document.getElementById('totalColumns');
   const fillRateSpan = document.getElementById('fillRate');
-  const dataQualitySpan = document.getElementById('dataQualitySpan');
+  const dataQualitySpan = document.getElementById('dataQuality');
   const chartsContainer = document.getElementById('chartsContainer');
   const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
 
@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
   let currentData = [];
   let sheetNames = []; // Массив названий листов
+  let spreadsheetId = "";
 
   // === ИНИЦИАЛИЗАЦИЯ ===
   if (lastLoadedUrl) {
@@ -75,58 +76,37 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById(item.dataset.analysis).classList.add('active');
     });
   });
-
-  // Обработчик изменения выбора листа
-  sheetSelect.addEventListener('change', () => {
-    const selectedSheetIndex = parseInt(sheetSelect.value, 10);
-    displayDataForSheet(currentData, selectedSheetIndex);
-  });
-
+  
   // === ОСНОВНАЯ ЛОГИКА ===
   async function loadAndDisplayData(url, forceRefresh = false) {
     showLoading(true);
     showFeedback('');
 
     try {
-      const spreadsheetId = extractSpreadsheetId(url);
+      spreadsheetId = extractSpreadsheetId(url);
       const sheetListUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
       const response = await fetch(sheetListUrl);
       const data = await response.text();
-      const jsonData = JSON.parse(data.substring(47).slice(0, -2)); // Обрезаем лишнее для получения чистого JSON
+      const jsonData = JSON.parse(data.substring(47).slice(0, -2));
+
       sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
 
-      populateSheetSelect(sheetNames);
+      populateSheetTabs(sheetNames);
       showFeedback("Листы успешно получены");
-      let sheetIndex = 0;
-      if (sheetNames.length > 0) {
-        // Если есть листы, загружаем первый лист
-        const csvUrl = convertToCsvExportUrl(spreadsheetId, sheetIndex, forceRefresh);
-
-        if (csvUrl != undefined) {
-          const csvResponse = await fetch(csvUrl);
-          if (!csvResponse.ok) {
-            throw new Error(`Ошибка при получении CSV: ${csvResponse.status} ${csvResponse.statusText}`);
-          }
-          const csvText = await csvResponse.text();
-          currentData = parseCSV(csvText);
-
-          localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
-
-          displayDataForSheet(currentData, sheetIndex);
-          showFeedback('Данные успешно загружены.', 'success');
-
-        } else {
-          showFeedback("Не удалось получить CSV Url");
-        }
-      } else {
-        showFeedback("Не удалось получить листы");
-      }
+       localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
     } catch (error) {
       console.error('Ошибка при загрузке данных:', error);
       showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
     } finally {
       showLoading(false);
     }
+  }
+  
+  function displayDataForSheet(data) {
+    activeSheetNameSpan.textContent = data.sheetName;// sheetNames[sheetIndex];
+    displayAnalytics(data.data);
+    displayTable(data.data);
+    generateRecommendations(data.data); // Generate recommendations for selected sheet
   }
 
   // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
@@ -148,52 +128,64 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     throw new Error('Не удалось извлечь ID таблицы из ссылки.');
   }
+  
+    function createSheetTab(sheetName, index, spreadsheetId) {
+      const button = document.createElement('button');
+      button.classList.add('sheet-tab');
+      button.textContent = sheetName;
+       button.addEventListener('click', async () => {
+          // Убираем active
+           document.querySelectorAll('.sheet-tab').forEach(tab => {
+            tab.classList.remove('active');
+          });
 
-  function populateSheetSelect(sheetNames) {
-    sheetSelect.innerHTML = '';
-    sheetNames.forEach((sheetName, index) => {
-      const option = document.createElement('option');
-      option.value = index;
-      option.textContent = sheetName;
-      sheetSelect.appendChild(option);
-    });
-  }
+           // Подсветим выбранную вкладку
+           button.classList.add('active');
 
-  function displayDataForSheet(data, sheetIndex) {
-    activeSheetNameSpan.textContent = sheetNames[sheetIndex]; // Set active sheet name
-    displayAnalytics(data); // Show data analytics for selected sheet
-    displayTable(data);
-    generateRecommendations(data); // Generate recommendations for selected sheet
+          // Загружаем CSV данные для нужной таблицы и отображаем
+          let csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+          // Используем метод fetch для загрузки CSV-данных.
+          fetch(csvUrl)
+             .then(response => {
+                if (!response.ok) {
+                  throw new Error('Network response was not ok');
+                }
+                return response.text();
+              })
+             .then(csvText => {
+                 let data = parseCSV(csvText);
+                // Отображаем полученные данные
+                displayDataForSheet({"sheetName":sheetName, "data":data});
+              })
+            .catch(error => {
+              console.error('There has been a problem with your fetch operation:', error);
+            });
+        });
 
-  }
-
-  function convertToCsvExportUrl(spreadsheetId, sheetIndex, forceRefresh) {
-
-    try {
-        var gid = 0
-
-        //  URL для Google Visualization API Proxy.
-        let exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&gid=0`;
-        
-        console.log(exportUrl);
-        // Добавляем timestamp, чтобы обойти кэш, если нужно обновить данные.
-        if (forceRefresh) {
-          exportUrl += `×tamp=${new Date().getTime()}`;
-        }
-        return exportUrl;
-    } catch (e) {
-      showFeedback("Не удалось сформировать ссылку");
-      return undefined;
+      return button;
     }
-  }
 
+    function populateSheetTabs(sheetNames) {
+      sheetTabs.innerHTML = ''; // Clear old tabs
+
+      sheetNames.forEach((sheetName, index) => {
+        const button = createSheetTab(sheetName, index, spreadsheetId);
+        sheetTabs.appendChild(button);
+      });
+
+      // Делаем первую вкладку активной
+      if (sheetNames.length > 0) {
+          let tab = document.getElementsByClassName("sheet-tab")[0];
+          tab.click()
+          //tab.classList.add('active');
+      }
+    }
+   
   function parseCSV(text) {
-    // Простая реализация парсера CSV
     const lines = text.replace(/\r/g, '').split('\n');
     return lines.map(line => line.split(','));
   }
-
-  // === ФУНКЦИИ АНАЛИЗА И ОТОБРАЖЕНИЯ ===
+   // === ФУНКЦИИ АНАЛИЗА И ОТОБРАЖЕНИЯ ===
 
   function displayAnalytics(data) {
     const headers = data[0];
@@ -315,8 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  
-    function createHorizontalBarChart(canvas, label, data) {
+   function createHorizontalBarChart(canvas, label, data) {
     const counts = {};
     data.forEach(value => {
         counts[value] = (counts[value] || 0) + 1;
