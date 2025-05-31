@@ -345,4 +345,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         loadAndDisplayData(currentSpreadsheetId, currentApiKey);
 
-        showFeedback(tableLinkFeedback, "Ссылка на таблицу сохра
+                showFeedback(tableLinkFeedback, "Ссылка на таблицу сохранена", true);
+    });
+
+    // Analysis Tabs
+    analysisTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Deactivate all tabs and contents
+            analysisTabs.forEach(t => t.classList.remove('active'));
+            analysisContents.forEach(c => c.classList.remove('active'));
+
+            // Activate selected tab and content
+            tab.classList.add('active');
+            const analysisType = tab.dataset.analysis;
+            document.getElementById(analysisType).classList.add('active');
+        });
+    });
+
+    // Validation
+
+    function validateInputs(spreadsheetId, apiKey) {
+        let isValid = true;
+
+        if (!spreadsheetId) {
+            spreadsheetIdValidation.textContent = 'Пожалуйста, введите ID таблицы.';
+            isValid = false;
+        } else {
+            spreadsheetIdValidation.textContent = '';
+        }
+
+        if (!apiKey) {
+            apiKeyValidation.textContent = 'Пожалуйста, введите API ключ.';
+            isValid = false;
+        } else {
+            apiKeyValidation.textContent = '';
+        }
+
+        return isValid;
+    }
+
+    // Feedback messages
+
+    function showFeedback(element, message, isSuccess = true) {
+        element.textContent = message;
+        element.className = `feedback-message ${isSuccess ? 'success' : 'error'}`;
+    }
+
+    // Loading indicator
+
+    function showLoadingIndicator(show) {
+        if (show) {
+            loadingIndicator.classList.add('active');
+        } else {
+            loadingIndicator.classList.remove('active');
+        }
+    }
+});
