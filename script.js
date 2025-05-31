@@ -1,103 +1,137 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Селекторы элементов
     const spreadsheetIdInput = document.getElementById('spreadsheetId');
     const apiKeyInput = document.getElementById('apiKey');
     const loadDataBtn = document.getElementById('loadDataBtn');
-    const tabsDiv = document.getElementById('tabs');
-    const contentDiv = document.getElementById('content');
+    const sheetsListDiv = document.getElementById('sheetsList');
+    const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
+    const dataStructureDiv = document.getElementById('dataStructure');
+    const activeSheetNameSpan = document.getElementById('activeSheetName');
+    const activeSheetRowsSpan = document.getElementById('activeSheetRows');
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettingsModal = document.getElementById('closeSettingsModal');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const tableLinkInput = document.getElementById('tableLink');
+    const saveTableLinkBtn = document.getElementById('saveTableLinkBtn');
 
-    loadDataBtn.addEventListener('click', async () => {
-        const spreadsheetId = spreadsheetIdInput.value;
-        const apiKey = apiKeyInput.value;
+    // Analysis section elements
+    const analysisTabs = document.querySelectorAll('.analysis-tab');
+    const analysisContents = document.querySelectorAll('.analysis-content');
+    const totalRecordsSpan = document.getElementById('totalRecords');
+    const totalColumnsSpan = document.getElementById('totalColumns');
+    const fillRateSpan = document.getElementById('fillRate');
+    const dataQualitySpan = document.getElementById('dataQuality');
+    const lastMonthTrendSpan = document.getElementById('lastMonthTrend');
+    const lastWeekTrendSpan = document.getElementById('lastWeekTrend');
+    const borisCountSpan = document.getElementById('borisCount');
+    const denisCountSpan = document.getElementById('denisCount');
 
-        if (!spreadsheetId || !apiKey) {
-            alert('Пожалуйста, введите ID таблицы и API ключ.');
-            return;
-        }
+    // State Variables
+    let currentSpreadsheetId = localStorage.getItem('spreadsheetId') || '';
+    let currentApiKey = localStorage.getItem('apiKey') || '';
+    let sheetsData = [];
+    let currentSheetIndex = 0;
 
+    // Initialization
+    spreadsheetIdInput.value = currentSpreadsheetId;
+    apiKeyInput.value = currentApiKey;
+
+    // Functions
+
+    //Load data and update ui
+    const loadAndDisplayData = async (spreadsheetId, apiKey) => {
         try {
-            const data = await loadSheetsData(spreadsheetId, apiKey);
-            createTabs(data);
+            sheetsData = await loadSheetsData(spreadsheetId, apiKey);
+            createSheetsList(sheetsData);
+            showDataPreview(0); // Default to the first sheet
         } catch (error) {
-            console.error('Ошибка загрузки данных:', error);
-            alert('Ошибка загрузки данных.  Проверьте ID таблицы и API ключ, а также CORS настройки.');
+            console.error('Error loading data:', error);
+            alert('Error loading data. Check your Spreadsheet ID, API Key, and CORS settings.');
         }
-    });
-
-    async function loadSheetsData(spreadsheetId, apiKey) {
-        //  Важно:  Замените `YOUR_SPREADSHEET_ID` и `YOUR_API_KEY` на переменные, хранящиеся в config.js.
-        const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
-
-
-        const response = await fetch(spreadsheetUrl);
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        const data = await response.json();
-        return data.sheets; // Возвращает массив листов
     }
 
-    function createTabs(sheetsData) {
-        tabsDiv.innerHTML = ''; // Очищаем существующие вкладки
-        contentDiv.innerHTML = ''; // Очищаем существующий контент
+    // Load initial data if available
+    if (currentSpreadsheetId && currentApiKey) {
+        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
+    }
 
-        sheetsData.forEach((sheet, index) => {
-            const sheetName = sheet.properties.title;
-            const tabButton = document.createElement('button');
-            tabButton.textContent = sheetName;
-            tabButton.addEventListener('click', () => showTabContent(index, sheetsData));
-            tabsDiv.appendChild(tabButton);
+    // Fetch Sheets Data
+    async function loadSheetsData(spreadsheetId, apiKey) {
+      const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
+      const response = await fetch(spreadsheetUrl);
 
-            const tabContent = document.createElement('div');
-            tabContent.id = `tab-${index}`;
-            contentDiv.appendChild(tabContent);
+      if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+      }
 
-            if (index === 0) {
-                tabButton.classList.add('active');
-                tabContent.classList.add('active');
-                showTabContent(index, sheetsData); // Показываем контент первой вкладки
+      const data = await response.json();
+      return data.sheets;
+    }
+
+    // Create Sheets List
+    function createSheetsList(sheets) {
+        sheetsListDiv.innerHTML = '';
+        sheets.forEach((sheet, index) => {
+            const sheetButton = document.createElement('button');
+            sheetButton.textContent = sheet.properties.title;
+            sheetButton.classList.add('sheet-button');
+            if (index === currentSheetIndex) {
+                sheetButton.classList.add('active');
             }
+            sheetButton.addEventListener('click', () => showDataPreview(index));
+            sheetsListDiv.appendChild(sheetButton);
         });
     }
 
+    // Show Data Preview for a selected sheet
+    async function showDataPreview(sheetIndex) {
+        currentSheetIndex = sheetIndex;
 
-    async function showTabContent(tabIndex, sheetsData) {
-        // Сначала деактивируем все вкладки и контент
-        document.querySelectorAll('#tabs button').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('#content > div').forEach(div => div.classList.remove('active'));
+        // Update active state of sheet buttons
+        document.querySelectorAll('.sheet-button').forEach((btn, index) => {
+            if (index === sheetIndex) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
 
-        // Активируем выбранную вкладку и контент
-        document.querySelector(`#tabs button:nth-child(${tabIndex + 1})`).classList.add('active');
-        document.getElementById(`tab-${tabIndex}`).classList.add('active');
-
-        const sheet = sheetsData[tabIndex];
-        const spreadsheetId = spreadsheetIdInput.value;
-        const apiKey = apiKeyInput.value;
+        const sheet = sheetsData[sheetIndex];
         const sheetName = sheet.properties.title;
+        activeSheetNameSpan.textContent = sheetName;
 
         try {
-            const sheetValues = await getSheetValues(spreadsheetId, sheetName, apiKey);
+            const sheetValues = await getSheetValues(currentSpreadsheetId, sheetName, currentApiKey);
             if (sheetValues && sheetValues.length > 0) {
-                 const tabContentDiv = document.getElementById(`tab-${tabIndex}`);
-                 tabContentDiv.innerHTML = ''; // Clear existing content
-
-                // Предполагаем, что первая строка - заголовки
-                const headers = sheetValues[0];
-
-                // Создаем таблицу
+                // Create and display table
                 const table = createTable(sheetValues);
-                tabContentDiv.appendChild(table);
+                dataPreviewTableDiv.innerHTML = '';
+                dataPreviewTableDiv.appendChild(table);
 
-                // Анализ данных и создание графиков
-                await analyzeAndVisualize(sheetValues, headers, tabContentDiv);
+                // Display data structure
+                const headers = sheetValues[0];
+                const structure = detectDataStructure(sheetValues);
+                displayDataStructure(headers, structure);
+
+                // Update active sheet rows count
+                activeSheetRowsSpan.textContent = sheetValues.length - 1; // Exclude header row
+
+                // Perform and display analytics
+                performAndDisplayAnalytics(sheetValues);
             } else {
-                document.getElementById(`tab-${tabIndex}`).textContent = 'Нет данных для отображения.';
+                dataPreviewTableDiv.innerHTML = '<p>No data to display.</p>';
+                dataStructureDiv.innerHTML = '';
+                activeSheetRowsSpan.textContent = '0';
             }
         } catch (error) {
-            console.error('Ошибка при получении данных из листа:', error);
-            document.getElementById(`tab-${tabIndex}`).textContent = 'Ошибка при получении данных. Проверьте консоль.';
+            console.error('Error fetching or displaying data:', error);
+            dataPreviewTableDiv.innerHTML = '<p>Error fetching data. Check console for details.</p>';
+            dataStructureDiv.innerHTML = '';
+            activeSheetRowsSpan.textContent = '0';
         }
     }
-
 
     async function getSheetValues(spreadsheetId, sheetName, apiKey) {
         const range = sheetName; //  Получаем все данные листа. Можно указать конкретный диапазон, например 'A1:B10'
@@ -111,12 +145,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return data.values;
     }
 
+
+    // Create Table
     function createTable(data) {
         const table = document.createElement('table');
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
 
-        // Заголовки
+        // Headers
         const headerRow = document.createElement('tr');
         data[0].forEach(headerText => {
             const th = document.createElement('th');
@@ -126,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
         thead.appendChild(headerRow);
         table.appendChild(thead);
 
-        // Данные
+        // Data Rows
         for (let i = 1; i < data.length; i++) {
             const row = document.createElement('tr');
             data[i].forEach(cellText => {
@@ -140,90 +176,184 @@ document.addEventListener('DOMContentLoaded', () => {
         return table;
     }
 
-
-    async function analyzeAndVisualize(data, headers, tabContentDiv) {
-      // Пропускаем строку заголовков при анализе
-      if (!data || data.length <= 1) {
-          console.warn("Недостаточно данных для анализа и визуализации.");
-          return;
-      }
-
-      for (let i = 0; i < headers.length; i++) {
-          const header = headers[i];
-          const columnData = data.slice(1).map(row => row[i]); // Extract data for the current column
-
-          const dataType = detectDataType(columnData);
-
-          if (dataType === 'number') {
-            const numbers = columnData.map(Number); // Convert to numbers
-            createChart(header, numbers, 'bar', tabContentDiv); // Example: bar chart for numbers
-          } else if (dataType === 'string') {
-            const counts = {};
-            columnData.forEach(value => {
-                counts[value] = (counts[value] || 0) + 1;
-            });
-
-            const labels = Object.keys(counts);
-            const values = Object.values(counts);
-            createChart(header, values, 'pie', tabContentDiv); // Example: pie chart for strings
-          }  else if (dataType === 'date'){
-              //  TODO:  Реализовать логику для обработки и визуализации дат
-              console.log(`Столбец "${header}" определен как даты.  Необходима логика для визуализации дат.`);
-          }
-
-          else {
-              console.log(`Не могу определить тип данных для столбца "${header}".`);
-          }
-      }
+    // Detect Data Structure
+    function detectDataStructure(data) {
+        if (!data || data.length <= 1) return [];
+        const structure = [];
+        const headers = data[0];
+        for (let i = 0; i < headers.length; i++) {
+            const columnData = data.slice(1).map(row => row[i]);
+            structure.push(detectDataType(columnData));
+        }
+        return structure;
     }
 
-
-    function detectDataType(columnData) {
-      // Проверяем, является ли большинство значений числами
-      const isNumberLike = columnData.every(value => !isNaN(parseFloat(value)) && isFinite(value));
-
-      if (isNumberLike) {
-          return 'number';
-      }
-
-      // Проверяем, являются ли большинство значений датами
-      const isDateLike = columnData.every(value => !isNaN(new Date(value)));
-
-      if (isDateLike) {
-          return 'date';
-      }
-
-        // Если не число и не дата, считаем строкой
-        return 'string';
-    }
-
-
-
-    function createChart(label, data, type, tabContentDiv) {
-        const canvas = document.createElement('canvas');
-        tabContentDiv.appendChild(canvas);
-
-        new Chart(canvas.getContext('2d'), {
-            type: type,
-            data: {
-                labels: data.map((_, index) => index + 1),  // Простые labels для примера
-                datasets: [{
-                    label: label,
-                    data: data,
-                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
+    // Display Data Structure
+    function displayDataStructure(headers, structure) {
+        dataStructureDiv.innerHTML = '';
+        headers.forEach((header, index) => {
+            const structureItem = document.createElement('span');
+            structureItem.textContent = `${header}: ${structure[index]}`;
+            structureItem.classList.add('structure-item');
+            dataStructureDiv.appendChild(structureItem);
         });
     }
 
+    // Detect Data Type
+    function detectDataType(columnData) {
+        const isNumberLike = columnData.every(value => !isNaN(parseFloat(value)) && isFinite(value));
+        if (isNumberLike) return 'number';
 
+        const isDateLike = columnData.every(value => !isNaN(new Date(value)));
+        if (isDateLike) return 'date';
+
+        return 'text';
+    }
+
+    // Perform Analytics
+    function performAndDisplayAnalytics(data) {
+        if (!data || data.length <= 1) {
+            console.warn("Not enough data for analytics.");
+            return;
+        }
+
+        // Simple Descriptive Analytics
+        const totalRecords = data.length - 1; // Exclude header row
+        const totalColumns = data[0].length;
+        const fillRate = calculateFillRate(data);
+        const dataQuality = calculateDataQuality(data);
+        const lastMonthTrend = 8; // Placeholder - replace with actual calculation
+        const lastWeekTrend = 2; // Placeholder - replace with actual calculation
+        const borisCount = countOccurrences(data, 0, 'Борис'); // Count occurrences of 'Борис' in the first column
+        const denisCount = countOccurrences(data, 0, 'Денис'); // Count occurrences of 'Денис' in the first column
+
+        // Update UI with analytics data
+        totalRecordsSpan.textContent = totalRecords;
+        totalColumnsSpan.textContent = totalColumns;
+        fillRateSpan.textContent = fillRate.toFixed(2) + '%';
+        dataQualitySpan.textContent = dataQuality.toFixed(2) + '%';
+        lastMonthTrendSpan.textContent = lastMonthTrend;
+        lastWeekTrendSpan.textContent = lastWeekTrend;
+        borisCountSpan.textContent = borisCount;
+        denisCountSpan.textContent = denisCount;
+    }
+
+    // Calculate Fill Rate
+    function calculateFillRate(data) {
+        let totalCells = (data.length - 1) * data[0].length;
+        let filledCells = 0;
+
+        for (let i = 1; i < data.length; i++) {
+            data[i].forEach(cell => {
+                if (cell && cell.trim() !== '') {
+                    filledCells++;
+                }
+            });
+        }
+
+        return (filledCells / totalCells) * 100;
+    }
+
+    // Calculate Data Quality (example: non-empty cells)
+    function calculateDataQuality(data) {
+        let totalCells = (data.length - 1) * data[0].length;
+        let validCells = 0;
+
+        for (let i = 1; i < data.length; i++) {
+            data[i].forEach((cell, index) => {
+                // Add your data quality rules here (e.g., check for valid email, phone number, etc.)
+                if (cell && cell.trim() !== '') {
+                    validCells++;
+                }
+            });
+        }
+
+        return (validCells / totalCells) * 100;
+    }
+
+    // Count Occurrences
+    function countOccurrences(data, columnIndex, value) {
+        let count = 0;
+        for (let i = 1; i < data.length; i++) {
+            if (data[i][columnIndex] === value) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Event Listeners
+
+    // Load Data Button
+    loadDataBtn.addEventListener('click', () => {
+        const spreadsheetId = spreadsheetIdInput.value;
+        const apiKey = apiKeyInput.value;
+
+        //Store values in local storage
+        localStorage.setItem('spreadsheetId', spreadsheetId);
+        localStorage.setItem('apiKey', apiKey);
+        loadAndDisplayData(spreadsheetId, apiKey);
+    });
+
+    // Refresh Data Button
+    refreshDataBtn.addEventListener('click', () => {
+        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
+    });
+
+    // Settings Button
+    settingsBtn.addEventListener('click', () => {
+        settingsModal.style.display = 'block';
+    });
+
+    // Close Settings Modal
+    closeSettingsModal.addEventListener('click', () => {
+        settingsModal.style.display = 'none';
+    });
+
+    // Save Settings Button
+    saveSettingsBtn.addEventListener('click', () => {
+        const spreadsheetId = spreadsheetIdInput.value;
+        const apiKey = apiKeyInput.value;
+
+         //Store values in local storage
+        localStorage.setItem('spreadsheetId', spreadsheetId);
+        localStorage.setItem('apiKey', apiKey);
+
+        currentSpreadsheetId = spreadsheetId;
+        currentApiKey = apiKey;
+
+        settingsModal.style.display = 'none';
+        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
+    });
+
+    // Table Link Save Button
+    saveTableLinkBtn.addEventListener('click', () => {
+        const tableLink = tableLinkInput.value;
+        // Implement logic to extract Spreadsheet ID from the link (if necessary)
+        // For simplicity, assuming the input is just the Spreadsheet ID
+        const spreadsheetId = tableLink;
+
+        spreadsheetIdInput.value = spreadsheetId;
+        currentSpreadsheetId = spreadsheetId;
+
+        //Store values in local storage
+        localStorage.setItem('spreadsheetId', spreadsheetId);
+        localStorage.setItem('apiKey', apiKey);
+
+        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
+    });
+
+    // Analysis Tabs
+    analysisTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Deactivate all tabs and contents
+            analysisTabs.forEach(t => t.classList.remove('active'));
+            analysisContents.forEach(c => c.classList.remove('active'));
+
+            // Activate selected tab and content
+            tab.classList.add('active');
+            const analysisType = tab.dataset.analysis;
+            document.getElementById(analysisType).classList.add('active');
+        });
+    });
 });
