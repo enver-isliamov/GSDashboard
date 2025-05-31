@@ -31,10 +31,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === СОСТОЯНИЕ ПРИЛОЖЕНИЯ ===
   let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
-  let currentData = [];
-  let sheetNames = []; // Массив названий листов
   let spreadsheetId = "";
-
+  
   // === ИНИЦИАЛИЗАЦИЯ ===
   if (lastLoadedUrl) {
     tableLinkInput.value = lastLoadedUrl;
@@ -89,11 +87,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.text();
       const jsonData = JSON.parse(data.substring(47).slice(0, -2));
 
-      sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
+      const sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
 
       populateSheetTabs(sheetNames);
       showFeedback("Листы успешно получены");
-       localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
+        localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
     } catch (error) {
       console.error('Ошибка при загрузке данных:', error);
       showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
@@ -101,36 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
       showLoading(false);
     }
   }
-    
-  function displayDataForSheet(data) {
-    activeSheetNameSpan.textContent = data.sheetName;// sheetNames[sheetIndex];
-    displayAnalytics(data.data);
-    displayTable(data.data);
-    generateRecommendations(data.data); // Generate recommendations for selected sheet
+   function parseCSV(text) {
+    const lines = text.replace(/\r/g, '').split('\n');
+    return lines.map(line => line.split(','));
   }
-   // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
-  function showLoading(isLoading) {
-        loadingIndicator.classList.toggle('active', isLoading);
-        dashboardContent.classList.toggle('hidden', isLoading);
-  }
-
-  function showFeedback(message, type = 'info') {
-        inputFeedback.textContent = message;
-        inputFeedback.className = `feedback-message ${type}`;
-  }
-
-  function extractSpreadsheetId(url) {
-        const match = url.match(/\/d\/(.*?)\//);
-        if (match && match[1]) {
-            return match[1];
-        }
-        throw new Error('Не удалось извлечь ID таблицы из ссылки.');
-  }
+  
     function createSheetTab(sheetName, index, spreadsheetId) {
       const button = document.createElement('button');
       button.classList.add('sheet-tab');
       button.textContent = sheetName;
-       button.addEventListener('click', async () => {
+      button.addEventListener('click', async () => {
           // Убираем active
            document.querySelectorAll('.sheet-tab').forEach(tab => {
             tab.classList.remove('active');
@@ -150,9 +128,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return response.text();
               })
              .then(csvText => {
-                 let data = parseCSV(csvText);
-                // Отображаем полученные данные
-                displayDataForSheet({"sheetName":sheetName, "data":data});
+                let data = parseCSV(csvText);
+                  // Создаем объект с данными и именем листа
+                 const sheetData = { "sheetName": sheetName, "data": data };
+                  // Вызываем функцию для отображения и анализа данных
+                 displayDataForSheet(sheetData);
               })
             .catch(error => {
               console.error('There has been a problem with your fetch operation:', error);
@@ -171,10 +151,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       // Делаем первую вкладку активной
-      if (sheetNames.length > 0) {
-          let tab = document.getElementsByClassName("sheet-tab")[0];
-          tab.click()
-      }
+        try {
+                let tab = document.getElementsByClassName("sheet-tab")[0];
+                tab.click()
+            } catch (e) {
+                console.error("An error occurred:", e.message, e);
+            }
     }
    
   function parseCSV(text) {
@@ -369,7 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (headers.length > 10) {
       recommendationList.innerHTML += '<li>Оптимизируйте количество столбцов для упрощения анализа.</li>';
     }
-    recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные результаты анализа.</li>"
+     recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные рекомендации.</li>"
 
   }
 
