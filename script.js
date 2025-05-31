@@ -1,166 +1,193 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Селекторы элементов
-    const spreadsheetIdInput = document.getElementById('spreadsheetId');
-    const apiKeyInput = document.getElementById('apiKey');
+    // === DOM ЭЛЕМЕНТЫ ===
+    const tableLinkInput = document.getElementById('tableLinkInput');
     const loadDataBtn = document.getElementById('loadDataBtn');
-    const sheetsListDiv = document.getElementById('sheetsList');
-    const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
-    const dataStructureDiv = document.getElementById('dataStructure');
-    const activeSheetNameSpan = document.getElementById('activeSheetName');
-    const activeSheetRowsSpan = document.getElementById('activeSheetRows');
     const refreshDataBtn = document.getElementById('refreshDataBtn');
-    const settingsBtn = document.getElementById('settingsBtn');
-    const settingsModal = document.getElementById('settingsModal');
-    const closeSettingsModal = document.getElementById('closeSettingsModal');
-    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-    const tableLinkInput = document.getElementById('tableLink');
-    const saveTableLinkBtn = document.getElementById('saveTableLinkBtn');
+    const inputFeedback = document.getElementById('inputFeedback');
     const loadingIndicator = document.getElementById('loadingIndicator');
-    const spreadsheetIdValidation = document.getElementById('spreadsheetIdValidation');
-    const apiKeyValidation = document.getElementById('apiKeyValidation');
-    const settingsFeedback = document.getElementById('settingsFeedback');
-    const tableLinkFeedback = document.getElementById('tableLinkFeedback');
+    const dashboardContent = document.getElementById('dashboardContent');
 
-    // Analysis section elements
-    const analysisTabs = document.querySelectorAll('.analysis-tab');
-    const analysisContents = document.querySelectorAll('.analysis-content');
+    // Навигация
+    const mainNavItems = document.querySelectorAll('.data-navigation li');
+    const mainTabs = document.querySelectorAll('.tab-content');
+    const analysisNavItems = document.querySelectorAll('.analysis-tab');
+    const analysisTabs = document.querySelectorAll('.analysis-content');
+    
+    // Элементы для данных
+    const activeSheetRowsSpan = document.getElementById('activeSheetRows');
     const totalRecordsSpan = document.getElementById('totalRecords');
     const totalColumnsSpan = document.getElementById('totalColumns');
     const fillRateSpan = document.getElementById('fillRate');
     const dataQualitySpan = document.getElementById('dataQuality');
-    const lastMonthTrendSpan = document.getElementById('lastMonthTrend');
-    const lastWeekTrendSpan = document.getElementById('lastWeekTrend');
-    const borisCountSpan = document.getElementById('borisCount');
-    const denisCountSpan = document.getElementById('denisCount');
+    const chartsContainer = document.getElementById('chartsContainer');
+    const dataPreviewTableDiv = document.getElementById('dataPreviewTable');
 
-    // State Variables
-    let currentSpreadsheetId = localStorage.getItem('spreadsheetId') || '';
-    let currentApiKey = localStorage.getItem('apiKey') || '';
-    let sheetsData = [];
-    let currentSheetIndex = parseInt(localStorage.getItem('currentSheetIndex')) || 0; // Load last selected sheet index
+    // === СОСТОЯНИЕ ПРИЛОЖЕНИЯ ===
+    let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
+    let currentData = [];
 
-    // Initialization
-    spreadsheetIdInput.value = currentSpreadsheetId;
-    apiKeyInput.value = currentApiKey;
+    // === ИНИЦИАЛИЗАЦИЯ ===
+    if (lastLoadedUrl) {
+        tableLinkInput.value = lastLoadedUrl;
+        loadAndDisplayData(lastLoadedUrl);
+    }
+    
+    // === ОБРАБОТЧИКИ СОБЫТИЙ ===
+    loadDataBtn.addEventListener('click', () => {
+        const url = tableLinkInput.value;
+        if (url) {
+            loadAndDisplayData(url);
+        } else {
+            showFeedback('Пожалуйста, вставьте ссылку на таблицу.', 'error');
+        }
+    });
 
-    // Functions
+    refreshDataBtn.addEventListener('click', () => {
+        if (lastLoadedUrl) {
+            loadAndDisplayData(lastLoadedUrl, true); // true - флаг для принудительного обновления
+        } else {
+            alert('Сначала загрузите данные, чтобы их можно было обновить.');
+        }
+    });
 
-    //Load data and update ui
-    const loadAndDisplayData = async (spreadsheetId, apiKey, sheetIndex = currentSheetIndex) => {
+    mainNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            mainNavItems.forEach(i => i.classList.remove('active'));
+            mainTabs.forEach(t => t.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById(item.dataset.tab).classList.add('active');
+        });
+    });
+
+    analysisNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            analysisNavItems.forEach(i => i.classList.remove('active'));
+            analysisTabs.forEach(c => c.classList.remove('active'));
+            item.classList.add('active');
+            document.getElementById(item.dataset.analysis).classList.add('active');
+        });
+    });
+
+    // === ОСНОВНАЯ ЛОГИКА ===
+    async function loadAndDisplayData(url, forceRefresh = false) {
+        showLoading(true);
+        showFeedback('');
+        
         try {
-            showLoadingIndicator(true);
-            sheetsData = await loadSheetsData(spreadsheetId, apiKey);
-            createSheetsList(sheetsData);
-            showDataPreview(sheetIndex); // Use provided sheetIndex or default
+            const csvUrl = convertToCsvExportUrl(url, forceRefresh);
+            const response = await fetch(csvUrl);
+            if (!response.ok) {
+                throw new Error(`Ошибка сети: ${response.status} ${response.statusText}`);
+            }
+            const csvText = await response.text();
+            
+            currentData = parseCSV(csvText);
+            
+            if (currentData.length < 2) { // Проверка на наличие данных (заголовок + хотя бы одна строка)
+                 throw new Error('Таблица пуста или содержит только заголовки.');
+            }
+
+            displayAnalytics(currentData);
+            displayTable(currentData);
+            
+            lastLoadedUrl = url;
+            localStorage.setItem('lastLoadedSheetUrl', url);
+            showFeedback('Данные успешно загружены и проанализированы.', 'success');
+
         } catch (error) {
-            console.error('Error loading data:', error);
-            alert('Error loading data. Check your Spreadsheet ID, API Key, and CORS settings.');
+            console.error('Ошибка при загрузке данных:', error);
+            showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и таблица опубликована в интернете.`, 'error');
         } finally {
-            showLoadingIndicator(false);
+            showLoading(false);
         }
     }
 
-    // Load initial data if available
-    if (currentSpreadsheetId && currentApiKey) {
-        loadAndDisplayData(currentSpreadsheetId, currentApiKey, currentSheetIndex); // Load with last selected sheet
+    // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
+
+    function showLoading(isLoading) {
+        loadingIndicator.classList.toggle('active', isLoading);
+        dashboardContent.classList.toggle('hidden', isLoading);
     }
 
-    // Fetch Sheets Data
-    async function loadSheetsData(spreadsheetId, apiKey) {
-        const spreadsheetUrl = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=${apiKey}`;
-        const response = await fetch(spreadsheetUrl);
+    function showFeedback(message, type = 'info') {
+        inputFeedback.textContent = message;
+        inputFeedback.className = `feedback-message ${type}`;
+    }
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+    function extractSpreadsheetId(url) {
+        const match = url.match(/\/d\/(.*?)\//);
+        if (match && match[1]) {
+            return match[1];
         }
-
-        const data = await response.json();
-        return data.sheets;
+        throw new Error('Не удалось извлечь ID таблицы из ссылки.');
     }
 
-    // Create Sheets List
-    function createSheetsList(sheets) {
-        sheetsListDiv.innerHTML = '';
-        sheets.forEach((sheet, index) => {
-            const sheetButton = document.createElement('button');
-            sheetButton.textContent = sheet.properties.title;
-            sheetButton.classList.add('sheet-button');
-            if (index === currentSheetIndex) {
-                sheetButton.classList.add('active');
+    function convertToCsvExportUrl(url, forceRefresh) {
+        const spreadsheetId = extractSpreadsheetId(url);
+        // Мы всегда будем запрашивать первый лист (gid=0)
+        let exportUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/export?format=csv&gid=0`;
+        // Добавляем случайный параметр, чтобы обойти кеширование при обновлении
+        if (forceRefresh) {
+            exportUrl += `×tamp=${new Date().getTime()}`;
+        }
+        return exportUrl;
+    }
+
+    function parseCSV(text) {
+        // Простая реализация парсера CSV. Для сложных случаев может потребоваться доработка.
+        const lines = text.replace(/\r/g, '').split('\n');
+        return lines.map(line => line.split(','));
+    }
+
+    // === ФУНКЦИИ ОТОБРАЖЕНИЯ ===
+
+    function displayAnalytics(data) {
+        const headers = data[0];
+        const rows = data.slice(1);
+
+        // 1. Отображение основных метрик
+        const totalRecords = rows.length;
+        const totalColumns = headers.length;
+        totalRecordsSpan.textContent = totalRecords;
+        totalColumnsSpan.textContent = totalColumns;
+        activeSheetRowsSpan.textContent = totalRecords;
+
+        let filledCells = 0;
+        rows.forEach(row => {
+            row.forEach(cell => {
+                if (cell && cell.trim() !== '') filledCells++;
+            });
+        });
+        const totalCells = totalRecords * totalColumns;
+        const fillRate = totalCells > 0 ? (filledCells / totalCells) * 100 : 0;
+        fillRateSpan.textContent = `${fillRate.toFixed(1)}%`;
+        dataQualitySpan.textContent = `${fillRate.toFixed(1)}%`; // В простом варианте качество = заполненность
+
+        // 2. Генерация и отображение графиков
+        chartsContainer.innerHTML = ''; // Очищаем старые графики
+        headers.forEach((header, index) => {
+            const columnData = rows.map(row => row[index]);
+            const dataType = detectDataType(columnData);
+
+            const chartContainer = document.createElement('div');
+            chartContainer.className = 'chart-container';
+            const canvas = document.createElement('canvas');
+            chartContainer.appendChild(canvas);
+            chartsContainer.appendChild(chartContainer);
+
+            if (dataType === 'number') {
+                createBarChart(canvas, header, columnData.map(Number));
+            } else if (dataType === 'string') {
+                createPieChart(canvas, header, columnData);
             }
-            sheetButton.addEventListener('click', () => showDataPreview(index));
-            sheetsListDiv.appendChild(sheetButton);
         });
     }
 
-    // Show Data Preview for a selected sheet
-    async function showDataPreview(sheetIndex) {
-        currentSheetIndex = sheetIndex;
-        localStorage.setItem('currentSheetIndex', sheetIndex); // Save current sheet index
-
-        // Update active state of sheet buttons
-        document.querySelectorAll('.sheet-button').forEach((btn, index) => {
-            if (index === sheetIndex) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
-
-        const sheet = sheetsData[sheetIndex];
-        const sheetName = sheet.properties.title;
-        activeSheetNameSpan.textContent = sheetName;
-
-        try {
-            const sheetValues = await getSheetValues(currentSpreadsheetId, sheetName, currentApiKey);
-            if (sheetValues && sheetValues.length > 0) {
-                // Create and display table
-                const table = createTable(sheetValues);
-                dataPreviewTableDiv.innerHTML = '';
-                dataPreviewTableDiv.appendChild(table);
-
-                // Display data structure
-                const headers = sheetValues[0];
-                const structure = detectDataStructure(sheetValues);
-                displayDataStructure(headers, structure);
-
-                // Update active sheet rows count
-                activeSheetRowsSpan.textContent = sheetValues.length - 1; // Exclude header row
-
-                // Perform and display analytics
-                performAndDisplayAnalytics(sheetValues);
-            } else {
-                dataPreviewTableDiv.innerHTML = '<p>No data to display.</p>';
-                dataStructureDiv.innerHTML = '';
-                activeSheetRowsSpan.textContent = '0';
-            }
-        } catch (error) {
-            console.error('Error fetching or displaying data:', error);
-            dataPreviewTableDiv.innerHTML = '<p>Error fetching data. Check console for details.</p>';
-            dataStructureDiv.innerHTML = '';
-            activeSheetRowsSpan.textContent = '0';
-        }
-    }
-
-    async function getSheetValues(spreadsheetId, sheetName, apiKey) {
-        const range = sheetName; //  Получаем все данные листа. Можно указать конкретный диапазон, например 'A1:B10'
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error(`Ошибка API Google Sheets: ${response.status}`);
-        }
-        const data = await response.json();
-        return data.values;
-    }
-
-    // Create Table
-    function createTable(data) {
+    function displayTable(data) {
         const table = document.createElement('table');
         const thead = document.createElement('thead');
         const tbody = document.createElement('tbody');
 
-        // Headers
         const headerRow = document.createElement('tr');
         data[0].forEach(headerText => {
             const th = document.createElement('th');
@@ -170,234 +197,96 @@ document.addEventListener('DOMContentLoaded', () => {
         thead.appendChild(headerRow);
         table.appendChild(thead);
 
-        // Data Rows
-        for (let i = 1; i < data.length; i++) {
+        data.slice(1).forEach(rowData => {
             const row = document.createElement('tr');
-            data[i].forEach(cellText => {
+            rowData.forEach(cellText => {
                 const td = document.createElement('td');
                 td.textContent = cellText;
                 row.appendChild(td);
             });
             tbody.appendChild(row);
-        }
+        });
         table.appendChild(tbody);
-        return table;
+        dataPreviewTableDiv.innerHTML = '';
+        dataPreviewTableDiv.appendChild(table);
     }
+    
+    // === ФУНКЦИИ АНАЛИЗА И ГРАФИКОВ ===
 
-    // Detect Data Structure
-    function detectDataStructure(data) {
-        if (!data || data.length <= 1) return [];
-        const structure = [];
-        const headers = data[0];
-        for (let i = 0; i < headers.length; i++) {
-            const columnData = data.slice(1).map(row => row[i]);
-            structure.push(detectDataType(columnData));
-        }
-        return structure;
-    }
-
-    // Display Data Structure
-    function displayDataStructure(headers, structure) {
-        dataStructureDiv.innerHTML = '';
-        headers.forEach((header, index) => {
-            const structureItem = document.createElement('span');
-            structureItem.textContent = `${header}: ${structure[index]}`;
-            structureItem.classList.add('structure-item');
-            dataStructureDiv.appendChild(structureItem);
-        });
-    }
-
-    // Detect Data Type
     function detectDataType(columnData) {
-        const isNumberLike = columnData.every(value => !isNaN(parseFloat(value)) && isFinite(value));
-        if (isNumberLike) return 'number';
-
-        const isDateLike = columnData.every(value => !isNaN(new Date(value)));
-        if (isDateLike) return 'date';
-
-        return 'text';
-    }
-
-    // Perform Analytics
-    function performAndDisplayAnalytics(data) {
-        if (!data || data.length <= 1) {
-            console.warn("Not enough data for analytics.");
-            return;
-        }
-
-        // Simple Descriptive Analytics
-        const totalRecords = data.length - 1; // Exclude header row
-        const totalColumns = data[0].length;
-        const fillRate = calculateFillRate(data);
-        const dataQuality = calculateDataQuality(data);
-        const lastMonthTrend = 8; // Placeholder - replace with actual calculation
-        const lastWeekTrend = 2; // Placeholder - replace with actual calculation
-        const borisCount = countOccurrences(data, 0, 'Борис'); // Count occurrences of 'Борис' in the first column
-        const denisCount = countOccurrences(data, 0, 'Денис'); // Count occurrences of 'Денис' in the first column
-
-        // Update UI with analytics data
-        totalRecordsSpan.textContent = totalRecords;
-        totalColumnsSpan.textContent = totalColumns;
-        fillRateSpan.textContent = fillRate.toFixed(2) + '%';
-        dataQualitySpan.textContent = dataQuality.toFixed(2) + '%';
-        lastMonthTrendSpan.textContent = lastMonthTrend;
-        lastWeekTrendSpan.textContent = lastWeekTrend;
-        borisCountSpan.textContent = borisCount;
-        denisCountSpan.textContent = denisCount;
-    }
-
-    // Calculate Fill Rate
-    function calculateFillRate(data) {
-        let totalCells = (data.length - 1) * data[0].length;
-        let filledCells = 0;
-
-        for (let i = 1; i < data.length; i++) {
-            data[i].forEach(cell => {
-                if (cell && cell.trim() !== '') {
-                    filledCells++;
-                }
-            });
-        }
-
-        return (filledCells / totalCells) * 100;
-    }
-
-    // Calculate Data Quality (example: non-empty cells)
-    function calculateDataQuality(data) {
-        let totalCells = (data.length - 1) * data[0].length;
-        let validCells = 0;
-
-        for (let i = 1; i < data.length; i++) {
-            data[i].forEach((cell, index) => {
-                // Add your data quality rules here (e.g., check for valid email, phone number, etc.)
-                if (cell && cell.trim() !== '') {
-                    validCells++;
-                }
-            });
-        }
-
-        return (validCells / totalCells) * 100;
-    }
-
-    // Count Occurrences
-    function countOccurrences(data, columnIndex, value) {
-        let count = 0;
-        for (let i = 1; i < data.length; i++) {
-            if (data[i][columnIndex] === value) {
-                count++;
+        // Проверяем, является ли большинство значений числами
+        let numberCount = 0;
+        columnData.forEach(val => {
+            if (val && !isNaN(val) && val.trim() !== '') {
+                numberCount++;
             }
-        }
-        return count;
-    }
-
-    // Event Listeners
-
-    // Load Data Button
-    loadDataBtn.addEventListener('click', () => {
-        const spreadsheetId = spreadsheetIdInput.value;
-        const apiKey = apiKeyInput.value;
-        loadAndDisplayData(spreadsheetId, apiKey);
-    });
-
-    // Refresh Data Button
-    refreshDataBtn.addEventListener('click', () => {
-        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
-    });
-
-    // Settings Button
-    settingsBtn.addEventListener('click', () => {
-        settingsModal.style.display = 'block';
-    });
-
-    // Close Settings Modal
-    closeSettingsModal.addEventListener('click', () => {
-        settingsModal.style.display = 'none';
-    });
-
-    // Save Settings Button
-    saveSettingsBtn.addEventListener('click', () => {
-        const spreadsheetId = spreadsheetIdInput.value;
-        const apiKey = apiKeyInput.value;
-
-        // Validate inputs
-        if (!validateInputs(spreadsheetId, apiKey)) return;
-
-        //Store values in local storage
-        localStorage.setItem('spreadsheetId', spreadsheetId);
-        localStorage.setItem('apiKey', apiKey);
-
-        currentSpreadsheetId = spreadsheetId;
-        currentApiKey = apiKey;
-
-        settingsModal.style.display = 'none';
-        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
-    });
-
-    // Table Link Save Button
-    saveTableLinkBtn.addEventListener('click', () => {
-        const tableLink = tableLinkInput.value;
-        // Implement logic to extract Spreadsheet ID from the link (if necessary)
-        // For simplicity, assuming the input is just the Spreadsheet ID
-        const spreadsheetId = tableLink;
-
-        spreadsheetIdInput.value = spreadsheetId;
-        currentSpreadsheetId = spreadsheetId;
-
-        loadAndDisplayData(currentSpreadsheetId, currentApiKey);
-
-                showFeedback(tableLinkFeedback, "Ссылка на таблицу сохранена", true);
-    });
-
-    // Analysis Tabs
-    analysisTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Deactivate all tabs and contents
-            analysisTabs.forEach(t => t.classList.remove('active'));
-            analysisContents.forEach(c => c.classList.remove('active'));
-
-            // Activate selected tab and content
-            tab.classList.add('active');
-            const analysisType = tab.dataset.analysis;
-            document.getElementById(analysisType).classList.add('active');
         });
-    });
 
-    // Validation
-
-    function validateInputs(spreadsheetId, apiKey) {
-        let isValid = true;
-
-        if (!spreadsheetId) {
-            spreadsheetIdValidation.textContent = 'Пожалуйста, введите ID таблицы.';
-            isValid = false;
-        } else {
-            spreadsheetIdValidation.textContent = '';
+        if (numberCount / columnData.length > 0.8) { // Если более 80% - числа
+            return 'number';
         }
-
-        if (!apiKey) {
-            apiKeyValidation.textContent = 'Пожалуйста, введите API ключ.';
-            isValid = false;
-        } else {
-            apiKeyValidation.textContent = '';
-        }
-
-        return isValid;
+        return 'string';
     }
 
-    // Feedback messages
-
-    function showFeedback(element, message, isSuccess = true) {
-        element.textContent = message;
-        element.className = `feedback-message ${isSuccess ? 'success' : 'error'}`;
+    function createBarChart(canvas, label, data) {
+        new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: data.map((_, i) => `Запись ${i + 1}`),
+                datasets: [{
+                    label: label,
+                    data: data,
+                    backgroundColor: 'rgba(0, 123, 255, 0.5)',
+                    borderColor: 'rgba(0, 123, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: `Столбчатая диаграмма для "${label}"` }
+                }
+            }
+        });
     }
 
-    // Loading indicator
+    function createPieChart(canvas, label, data) {
+        const counts = data.reduce((acc, value) => {
+            acc[value] = (acc[value] || 0) + 1;
+            return acc;
+        }, {});
+        
+                const chartData = Object.values(counts);
 
-    function showLoadingIndicator(show) {
-        if (show) {
-            loadingIndicator.classList.add('active');
-        } else {
-            loadingIndicator.classList.remove('active');
+        new Chart(canvas, {
+            type: 'pie',
+            data: {
+                labels: chartLabels,
+                datasets: [{
+                    label: label,
+                    data: chartData,
+                    backgroundColor: generatePastelColors(chartLabels.length),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: { display: true, text: `Круговая диаграмма для "${label}"` }
+                }
+            }
+        });
+    }
+    
+    function generatePastelColors(count) {
+        const colors = [];
+        for (let i = 0; i < count; i++) {
+            // Generate a random pastel color
+            const hue = Math.floor(Math.random() * 360);
+            colors.push(`hsl(${hue}, 70%, 80%)`);
         }
+        return colors;
     }
 });
