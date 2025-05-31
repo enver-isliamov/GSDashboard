@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById(item.dataset.analysis).classList.add('active');
     });
   });
-  
+
   // === ОСНОВНАЯ ЛОГИКА ===
   async function loadAndDisplayData(url, forceRefresh = false) {
     showLoading(true);
@@ -101,34 +101,31 @@ document.addEventListener('DOMContentLoaded', () => {
       showLoading(false);
     }
   }
-  
+    
   function displayDataForSheet(data) {
     activeSheetNameSpan.textContent = data.sheetName;// sheetNames[sheetIndex];
     displayAnalytics(data.data);
     displayTable(data.data);
     generateRecommendations(data.data); // Generate recommendations for selected sheet
   }
-
-  // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
-
+   // === ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ===
   function showLoading(isLoading) {
-    loadingIndicator.classList.toggle('active', isLoading);
-    dashboardContent.classList.toggle('hidden', isLoading);
+        loadingIndicator.classList.toggle('active', isLoading);
+        dashboardContent.classList.toggle('hidden', isLoading);
   }
 
   function showFeedback(message, type = 'info') {
-    inputFeedback.textContent = message;
-    inputFeedback.className = `feedback-message ${type}`;
+        inputFeedback.textContent = message;
+        inputFeedback.className = `feedback-message ${type}`;
   }
 
   function extractSpreadsheetId(url) {
-    const match = url.match(/\/d\/(.*?)\//);
-    if (match && match[1]) {
-      return match[1];
-    }
-    throw new Error('Не удалось извлечь ID таблицы из ссылки.');
+        const match = url.match(/\/d\/(.*?)\//);
+        if (match && match[1]) {
+            return match[1];
+        }
+        throw new Error('Не удалось извлечь ID таблицы из ссылки.');
   }
-  
     function createSheetTab(sheetName, index, spreadsheetId) {
       const button = document.createElement('button');
       button.classList.add('sheet-tab');
@@ -177,7 +174,6 @@ document.addEventListener('DOMContentLoaded', () => {
       if (sheetNames.length > 0) {
           let tab = document.getElementsByClassName("sheet-tab")[0];
           tab.click()
-          //tab.classList.add('active');
       }
     }
    
@@ -186,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return lines.map(line => line.split(','));
   }
    // === ФУНКЦИИ АНАЛИЗА И ОТОБРАЖЕНИЯ ===
-
   function displayAnalytics(data) {
     const headers = data[0];
     const rows = data.slice(1);
@@ -345,7 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
   }
-
   function generatePastelColors(count) {
     const colors = [];
     for (let i = 0; i < count; i++) {
@@ -375,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (headers.length > 10) {
       recommendationList.innerHTML += '<li>Оптимизируйте количество столбцов для упрощения анализа.</li>';
     }
-    recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные рекомендации.</li>"
+    recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные результаты анализа.</li>"
 
   }
 
@@ -390,58 +384,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
   }
 });
-async function loadAndDisplayData(url, forceRefresh = false) {
-    showLoading(true);
-    showFeedback('');
-    try {
-        spreadsheetId = extractSpreadsheetId(url);
-        const sheetListUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
-        const response = await fetch(sheetListUrl);
-        const data = await response.text();
-        const jsonData = JSON.parse(data.substring(47).slice(0, -2));
-
-        sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
-
-        populateSheetTabs(sheetNames);
-        showFeedback("Листы успешно получены");
-         localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
-
-        // Добавим проверку тут:
-        if (sheetTabs) {
-            populateSheetTabs(sheetNames);
-        } else {
-            console.error("Элемент sheetTabs не найден!");
-        }
-    }  catch (error) {
-        console.error('Ошибка при загрузке данных:', error);
-        showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
-    } finally {
-        showLoading(false);
-    }
-}
-
-function populateSheetTabs(sheetNames) {
-    if (!sheetTabs) {
-        console.error("Элемент sheetTabs не найден, не могу создать вкладки!");
-        return;
-    }
-
-    sheetTabs.innerHTML = ''; // Clear old tabs
-
-    sheetNames.forEach((sheetName, index) => {
-        const button = createSheetTab(sheetName, index, spreadsheetId);
-        sheetTabs.appendChild(button);
-    });
-
-    // Делаем первую вкладку активной
-    if (sheetNames.length > 0) {
-        // Проверяем, что вкладки были добавлены в DOM, прежде чем пытаться их активировать
-         if (sheetTabs.children.length > 0) {
-            let tab = sheetTabs.children[0];
-            tab.click();
-         } else {
-             console.warn("Вкладки листов созданы, но не добавлены в DOM.");
-         }
-
-    }
-}
