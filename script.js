@@ -32,23 +32,22 @@ document.addEventListener('DOMContentLoaded', () => {
     // === СОСТОЯНИЕ ПРИЛОЖЕНИЯ ===
     let lastLoadedUrl = localStorage.getItem('lastLoadedSheetUrl') || '';
     let spreadsheetId = "";
-  
+
     // === ИНИЦИАЛИЗАЦИЯ ===
     if (lastLoadedUrl) {
         tableLinkInput.value = lastLoadedUrl;
         loadAndDisplayData(lastLoadedUrl);
     }
-
     // === ОБРАБОТЧИКИ СОБЫТИЙ ===
-    loadDataBtn.addEventListener('click', () => {
+        loadDataBtn.addEventListener('click', () => {
         const url = tableLinkInput.value;
         if (url) {
-            loadAndDisplayData(url);
+          showFeedback("Начинаю загрузку данных...");
+          loadAndDisplayData(url);
         } else {
             showFeedback('Пожалуйста, вставьте ссылку на таблицу.', 'error');
         }
     });
-
     refreshDataBtn.addEventListener('click', () => {
         if (lastLoadedUrl) {
             loadAndDisplayData(lastLoadedUrl, true);
@@ -56,7 +55,6 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Сначала загрузите данные, чтобы их можно было обновить.');
         }
     });
-
     mainNavItems.forEach(item => {
         item.addEventListener('click', () => {
             mainNavItems.forEach(i => i.classList.remove('active'));
@@ -65,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(item.dataset.tab).classList.add('active');
         });
     });
-
     analysisNavItems.forEach(item => {
         item.addEventListener('click', () => {
             analysisNavItems.forEach(i => i.classList.remove('active'));
@@ -82,76 +79,130 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // === ОСНОВНАЯ ЛОГИКА ===
   async function loadAndDisplayData(url, forceRefresh = false) {
-    showLoading(true);
-    showFeedback('');
+        showLoading(true);
+        showFeedback('');
+         try {
+                spreadsheetId = extractSpreadsheetId(url);
+                showFeedback("spreadsheetId "+spreadsheetId);
 
-    try {
-      spreadsheetId = extractSpreadsheetId(url);
-      const sheetListUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
-      const response = await fetch(sheetListUrl);
-      const data = await response.text();
-      const jsonData = JSON.parse(data.substring(47).slice(0, -2));
-        if (!jsonData || !jsonData.table || !jsonData.table.cols) {
-                    throw new Error("Не удалось получить данные о листах из таблицы.");
-        }
-      const sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
+                const sheetListUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json`;
+                showFeedback("sheetListUrl "+sheetListUrl);
+                const response = await fetch(sheetListUrl);
+                 if (!response.ok) {
+                         throw new Error(`Не удалось получить данные о листах. HTTP код: ${response.status}`);
+                 }
 
-      populateSheetTabs(sheetNames);
-      showFeedback("Листы успешно получены");
-        localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
+                 const data = await response.text();
+                 const jsonData = JSON.parse(data.substring(47).slice(0, -2));
+                  if (!jsonData || !jsonData.table || !jsonData.table.cols) {
+                         throw new Error("Не удалось получить данные о листах из JSON. Проверьте JSON");
+                  }
 
-    } catch (error) {
-      console.error('Ошибка при загрузке данных:', error);
-      showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
-    } finally {
-      showLoading(false);
-    }
+                   const sheetNames = jsonData.table.cols.map(col => col.label).filter(label => label.startsWith('sheet'));
+                   showFeedback("Найдено листов"+sheetNames.length);
+                   populateSheetTabs(sheetNames);
+           localStorage.setItem('lastLoadedSheetUrl', url); // Сохраняем URL
+          } catch (error) {
+              console.error('Ошибка при загрузке данных:', error);
+              showFeedback(`Ошибка: ${error.message}. Убедитесь, что ссылка верна и доступ к таблице открыт "Всем, у кого есть ссылка".`, 'error');
+          } finally {
+                 showLoading(false);
+          }
   }
-
-  function createSheetTab(sheetName, index, spreadsheetId) {
+    function createSheetTab(sheetName, index, spreadsheetId) {
       const button = document.createElement('button');
       button.classList.add('sheet-tab');
       button.textContent = sheetName;
-         button.addEventListener('click', async () => {
+       button.addEventListener('click', async () => {
           document.querySelectorAll('.sheet-tab').forEach(tab => tab.classList.remove('active'));
           button.classList.add('active');
-
-         try {
-              let csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
-              const response = await fetch(csvUrl);
-              if (!response.ok) {
-                      throw new Error(`Ошибка при загрузке CSV: ${response.status} ${response.statusText}`);
-              }
-              const csvText = await response.text();
-              const data = parseCSV(csvText);
-           displayData({"sheetName": sheetName, "data": data});
-         } catch (e) {
-              console.error("Ошибка во время обработки данных: ",e.message,e);
-           }
+            try {
+                   let csvUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+                showFeedback("csvUrl "+csvUrl);
+                      const response = await fetch(csvUrl);
+                      if (!response.ok) {
+                              throw new Error(`Ошибка при загрузке CSV: ${response.status} ${response.statusText}`);
+                      }
+                      const csvText = await response.text();
+                      const data = parseCSV(csvText);
+                    showFeedback("Получены данные, строк: " + data.length + " для листа: " + sheetName);
+                     displayAnalytics(data)
+                     displayTable(data)  // Show analytics for the sheet
+          } catch (e) {
+                    showFeedback(`Ошибка во время обработки данных: ${e.message}`);
+                   console.error("Ошибка во время обработки данных: ",e.message,e);
+             }
+         activeSheetNameSpan.textContent=sheetName;
+          showFeedback(activeSheetNameSpan.textContent);
          });
-      return button;
+          return button;
   }
-     
-   function populateSheetTabs(sheetNames) {
-      sheetTabs.innerHTML = '';
-      if (Array.isArray(sheetNames) && sheetNames.length) {
+   // New function
+       function createHorizontalBarChart(canvas, label, data) {
+           const counts = {};
+           data.forEach(value => {
+               counts[value] = (counts[value] || 0) + 1;
+           });
+
+           const labels = Object.keys(counts);
+           const values = Object.values(counts);
+
+           new Chart(canvas, {
+               type: 'bar',
+               data: {
+                   labels: labels,
+                   datasets: [{
+                       label: label,
+                       data: values,
+                       backgroundColor: generatePastelColors(labels.length),
+                       borderWidth: 1
+                   }]
+               },
+               options: {
+                   indexAxis: 'y',
+                   responsive: true,
+                   maintainAspectRatio: false,
+                   plugins: {
+                       title: {
+                           display: true,
+                           text: `Горизонтальная столбчатая диаграмма для "${label}"`
+                       }
+                   },
+                   scales: {
+                       x: {
+                           beginAtZero: true
+                       }
+                   }
+               }
+           });
+     }
+    function populateSheetTabs(sheetNames) {
+        sheetTabs.innerHTML = '';
+        if (Array.isArray(sheetNames) && sheetNames.length) {
             sheetNames.forEach((sheetName, index) => {
                 const button = createSheetTab(sheetName, index, spreadsheetId);
                 sheetTabs.appendChild(button);
             });
-             // Auto click on tab
-               let tab = document.getElementsByClassName("sheet-tab")[0];
-               if (tab) {
-                  tab.click()
-               } else {
-                     console.warn("tab undefined - can not do click on tab");
-                }  
-      } else {
-         showFeedback("Листы отсутствуют. Проверьте данные.");
-      }
+   } else {
+    showFeedback("Листы отсутствуют. Проверьте данные.");
+ }
     }
 
+  function generatePastelColors(count) {
+    const colors = [];
+    for (let i = 0; i < count; i++) {
+      const hue = Math.floor(Math.random() * 360);
+      colors.push(`hsl(${hue}, 70%, 80%)`);
+    }
+    return colors;
+  }
+  // === ФУНКЦИИ АНАЛИЗА И ОТОБРАЖЕНИЯ ===
   function displayAnalytics(data) {
+    if (!data || data.length < 2) {
+        showFeedback("Недостаточно данных для отображения аналитики.","error");
+        return;
+    }
+
     const headers = data[0];
     const rows = data.slice(1);
 
@@ -191,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-// Окно
+
   function displayTable(data) {
     const table = document.createElement('table');
     const thead = document.createElement('thead');
@@ -220,6 +271,11 @@ document.addEventListener('DOMContentLoaded', () => {
     dataPreviewTableDiv.innerHTML = '';
     dataPreviewTableDiv.appendChild(table);
   }
+    
+     function showFeedback(element, message, isSuccess = true) {
+            inputFeedback.textContent = message;
+            inputFeedback.className = `feedback-message ${isSuccess ? 'success' : 'error'}`;
+     }
 
   // === ФУНКЦИИ АНАЛИЗА ДАННЫХ ===
 
@@ -271,67 +327,53 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-  // New function
-  function displayData(sheetData) {
-        const { sheetName, data } = sheetData;
-         
-          activeSheetNameSpan.textContent = sheetName;
-           if(data.length>1){
-           displayAnalytics(data); // Show analytics for the sheet
-           displayTable(data); // Show table for the sheet
-            generateRecommendations(data); // Generate recommendations
-           } else {
-               showFeedback("Что-то пошло не так в процессе парсинга данных", "error");
-           }
-  }
-// New function
-   function createHorizontalBarChart(canvas, label, data) {
-       const counts = {};
-       data.forEach(value => {
-           counts[value] = (counts[value] || 0) + 1;
-       });
+     function createHorizontalBarChart(canvas, label, data) {
+         const counts = {};
+         data.forEach(value => {
+             counts[value] = (counts[value] || 0) + 1;
+         });
 
-       const labels = Object.keys(counts);
-       const values = Object.values(counts);
+         const labels = Object.keys(counts);
+         const values = Object.values(counts);
 
-       new Chart(canvas, {
-           type: 'bar',
-           data: {
-               labels: labels,
-               datasets: [{
-                   label: label,
-                   data: values,
-                   backgroundColor: generatePastelColors(labels.length),
-                   borderWidth: 1
-               }]
-           },
-           options: {
-               indexAxis: 'y',
-               responsive: true,
-               maintainAspectRatio: false,
-               plugins: {
-                   title: {
-                       display: true,
-                       text: `Горизонтальная столбчатая диаграмма для "${label}"`
-                   }
-               },
-               scales: {
-                   x: {
-                       beginAtZero: true
-                   }
-               }
-           }
-       });
+         new Chart(canvas, {
+             type: 'bar',
+             data: {
+                 labels: labels,
+                 datasets: [{
+                     label: label,
+                     data: values,
+                     backgroundColor: generatePastelColors(labels.length),
+                     borderWidth: 1
+                 }]
+             },
+             options: {
+                 indexAxis: 'y',
+                 responsive: true,
+                 maintainAspectRatio: false,
+                 plugins: {
+                     title: {
+                         display: true,
+                         text: `Горизонтальная столбчатая диаграмма для "${label}"`
+                     }
+                 },
+                 scales: {
+                     x: {
+                         beginAtZero: true
+                     }
+                 }
+             }
+         });
    }
-   function generatePastelColors(count) {
-     const colors = [];
-     for (let i = 0; i < count; i++) {
-           const hue = Math.floor(Math.random() * 360);
-           colors.push(`hsl(${hue}, 70%, 80%)`);
-     }
-     return colors;
+     function generatePastelColors(count) {
+       const colors = [];
+       for (let i = 0; i < count; i++) {
+            const hue = Math.floor(Math.random() * 360);
+             colors.push(`hsl(${hue}, 70%, 80%)`);
+       }
+         return colors;
    }
-    // === ФУНКЦИИ АНАЛИЗА И РЕКОМЕНДАЦИЙ ===
+  // === ФУНКЦИИ АНАЛИЗА И РЕКОМЕНДАЦИЙ ===
     function generateRecommendations(data) {
         recommendationList.innerHTML = '';
         if (!data || data.length <= 1) {
@@ -348,7 +390,7 @@ document.addEventListener('DOMContentLoaded', () => {
        if (headers.length > 10) {
            recommendationList.innerHTML += '<li>Оптимизируйте количество столбцов для упрощения анализа.</li>';
         }
-     recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные результаты анализа.</li>"
+      recommendationList.innerHTML += "<li>Раздел в разработке. В будущем здесь будут появляться более точные результаты анализа.</li>"
 
    }
 
