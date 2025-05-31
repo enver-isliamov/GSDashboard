@@ -1,115 +1,126 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
-    <meta charset="UTF-8">
-    <title>Google Sheets Dashboard</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <title>Google Sheets Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+    integrity="sha512-KfkfwYDsLkIlwQp6LFnl8zNdLGxu9YAA1QvwINks4PhcElQSvqcyVLLD9aMhXd13uQjoXtEKNosOWaZqXgel0g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
-    <div class="dashboard-container">
-        <header class="dashboard-header">
-            <h1>Google Sheets Dashboard</h1>
-            <div class="header-actions">
-                <button id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Обновить данные</button>
-            </div>
-        </header>
+  <div class="dashboard-container">
+    <header class="dashboard-header">
+      <h1>Google Sheets Dashboard</h1>
+      <div class="header-actions">
+        <button id="refreshDataBtn"><i class="fas fa-sync-alt"></i> Обновить данные</button>
+      </div>
+    </header>
 
-        <section class="table-input-section">
-            <h2>Анализ таблицы</h2>
-            <p>Вставьте ссылку на вашу таблицу Google. <br><b>Важно:</b> таблица должна быть опубликована в интернете (Файл > Поделиться > Опубликовать в интернете).</p>
-            <div class="quick-table-change">
-                <i class="fas fa-link"></i>
-                <input type="text" id="tableLinkInput" placeholder="https://docs.google.com/spreadsheets/d/...">
-                <button id="loadDataBtn"><i class="fas fa-rocket"></i> Анализировать</button>
-            </div>
-            <div class="form-group">
-                <label for="sheetSelect">Выберите лист для анализа:</label>
-                <select id="sheetSelect"></select>
-            </div>
-            <div class="feedback-message" id="inputFeedback"></div>
-        </section>
+    <section class="table-input-section">
+      <h2>Анализ таблицы</h2>
+      <p>Вставьте ссылку на вашу таблицу Google.
+        <br><b>Важно:</b> доступ к таблице должен быть открыт "Всем, у кого есть ссылка".
+      </p>
+      <div class="quick-table-change">
+        <i class="fas fa-link"></i>
+        <input type="text" id="tableLinkInput" placeholder="https://docs.google.com/spreadsheets/d/...">
+        <button id="loadDataBtn"><i class="fas fa-rocket"></i> Анализировать</button>
+      </div>
+      <div class="form-group">
+        <label for="sheetSelect">Выберите лист для анализа:</label>
+        <select id="sheetSelect"></select>
+      </div>
+      <div class="feedback-message" id="inputFeedback"></div>
+    </section>
 
-        <div class="loading-indicator" id="loadingIndicator">
-            <div class="spinner"></div>
-            <p>Загрузка и анализ данных...</p>
-        </div>
-        
-        <div id="dashboardContent" class="hidden">
-            <section class="active-sheet-info">
-                <strong>Анализируется лист: </strong> <span id="activeSheetName"></span> (<span id="activeSheetRows">0</span> строк)
-            </section>
-            
-            <nav class="data-navigation">
-                <ul>
-                    <li data-tab="analytics" class="active"><i class="fas fa-chart-pie"></i> Аналитика</li>
-                    <li data-tab="data-preview"><i class="fas fa-table"></i> Просмотр данных</li>
-                    <li data-tab="recommendations"><i class="fas fa-lightbulb"></i> Рекомендации</li>
-                </ul>
-            </nav>
-
-            <div id="analytics" class="tab-content active">
-                <div class="analysis-tabs">
-                    <button class="analysis-tab active" data-analysis="descriptive"><i class="fas fa-eye"></i> Описательная</button>
-                    <button class="analysis-tab" data-analysis="diagnostic"><i class="fas fa-search"></i> Диагностическая</button>
-                    <button class="analysis-tab" data-analysis="predictive"><i class="fas fa-chart-line"></i> Предиктивная</button>
-                    <button class="analysis-tab" data-analysis="prescriptive"><i class="fas fa-prescription"></i> Прескриптивная</button>
-                </div>
-
-                <div id="descriptive" class="analysis-content active">
-                    <h2>Описательная аналитика: "Что произошло?"</h2>
-                    <div class="descriptive-metrics">
-                        <div class="metric-card">
-                            <span class="metric-value" id="totalRecords">0</span>
-                            <span class="metric-label">Всего записей</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value" id="totalColumns">0</span>
-                            <span class="metric-label">Столбцов</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value" id="fillRate">0%</span>
-                            <span class="metric-label">Заполненность</span>
-                        </div>
-                        <div class="metric-card">
-                            <span class="metric-value" id="dataQuality">0%</span>
-                            <span class="metric-label">Качество данных</span>
-                        </div>
-                    </div>
-                    <div id="chartsContainer"></div>
-                </div>
-
-                <div id="diagnostic" class="analysis-content">
-                    <h2>Диагностическая аналитика: "Почему это произошло?"</h2>
-                    <p class="placeholder-text">Этот раздел в разработке. Здесь будет анализ взаимосвязей и причинно-следственных связей в данных.</p>
-                </div>
-
-                <div id="predictive" class="analysis-content">
-                    <h2>Предиктивная аналитика: "Что может произойти?"</h2>
-                    <p class="placeholder-text">Этот раздел в разработке. Здесь будут прогнозы на основе исторических данных (например, тренды продаж).</p>
-                </div>
-
-                <div id="prescriptive" class="analysis-content">
-                    <h2>Прескриптивная аналитика: "Что нам следует сделать?"</h2>
-                    <p class="placeholder-text">Этот раздел в разработке. Здесь будут рекомендации по оптимизации на основе анализа данных.</p>
-                </div>
-            </div>
-
-            <div id="data-preview" class="tab-content">
-                <h2>Просмотр данных таблицы</h2>
-                <div id="dataPreviewTable"></div>
-            </div>
-
-            <section id="recommendations" class="tab-content">
-                <h2>Рекомендации</h2>
-                <ul id="recommendationList">
-                    <!-- Рекомендации будут генерироваться здесь -->
-                </ul>
-            </section>
-        </div>
+    <div class="loading-indicator" id="loadingIndicator">
+      <div class="spinner"></div>
+      <p>Загрузка и анализ данных...</p>
     </div>
-    <script src="script.js"></script>
+
+    <div id="dashboardContent" class="hidden">
+      <section class="active-sheet-info">
+        <strong>Анализируется лист: </strong> <span id="activeSheetName"></span> (<span id="activeSheetRows">0</span>
+        строк)
+      </section>
+
+      <nav class="data-navigation">
+        <ul>
+          <li data-tab="analytics" class="active"><i class="fas fa-chart-pie"></i> Аналитика</li>
+          <li data-tab="data-preview"><i class="fas fa-table"></i> Просмотр данных</li>
+          <li data-tab="recommendations"><i class="fas fa-lightbulb"></i> Рекомендации</li>
+        </ul>
+      </nav>
+
+      <div id="analytics" class="tab-content active">
+        <div class="analysis-tabs">
+          <button class="analysis-tab active" data-analysis="descriptive"><i class="fas fa-eye"></i> Описательная</button>
+          <button class="analysis-tab" data-analysis="diagnostic"><i class="fas fa-search"></i> Диагностическая</button>
+          <button class="analysis-tab" data-analysis="predictive"><i class="fas fa-chart-line"></i> Предиктивная</button>
+          <button class="analysis-tab" data-analysis="prescriptive"><i class="fas fa-lightbulb"></i> Прескриптивная</button>
+        </div>
+
+        <div id="descriptive" class="analysis-content active">
+          <h2>Описательная аналитика: "Что произошло?"</h2>
+          <div class="descriptive-metrics">
+            <div class="metric-card">
+              <span class="metric-value" id="totalRecords">0</span>
+              <span class="metric-label">Всего записей</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value" id="totalColumns">0</span>
+              <span class="metric-label">Столбцов</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value" id="fillRate">0%</span>
+              <span class="metric-label">Заполненность</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-value" id="dataQuality">0%</span>
+              <span class="metric-label">Качество данных</span>
+            </div>
+          </div>
+          <div id="chartsContainer"></div>
+        </div>
+
+        <div id="diagnostic" class="analysis-content">
+          <h2>Диагностическая аналитика: "Почему это произошло?"</h2>
+          <p class="placeholder-text">Этот раздел в разработке. Здесь будет анализ взаимосвязей и причинно-следственных
+            связей в данных.</p>
+        </div>
+
+        <div id="predictive" class="analysis-content">
+          <h2>Предиктивная аналитика: "Что может произойти?"</h2>
+          <p class="placeholder-text">Этот раздел в разработке. Здесь будут прогнозы на основе исторических данных
+            (например, тренды продаж).</p>
+        </div>
+
+        <div id="prescriptive" class="analysis-content">
+          <h2>Прескриптивная аналитика: "Что нам следует сделать?"</h2>
+          <p class="placeholder-text">Этот раздел в разработке. Здесь будут рекомендации по оптимизации на основе анализа
+            данных.</p>
+        </div>
+      </div>
+
+      <div id="data-preview" class="tab-content">
+        <h2>Просмотр данных таблицы</h2>
+        <div id="dataPreviewTable"></div>
+      </div>
+
+      <section id="recommendations" class="tab-content">
+        <h2>Рекомендации</h2>
+        <ul id="recommendationList">
+          <!-- Рекомендации будут генерироваться здесь -->
+        </ul>
+      </section>
+    </div>
+  </div>
+  <script src="script.js"></script>
 </body>
+
 </html>
